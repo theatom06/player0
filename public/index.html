@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Project 0 - Music Player</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Sidebar Navigation -->
+    <nav class="sidebar">
+      <div class="logo">
+        <svg class="logo-icon" viewBox="0 0 100 100" width="50" height="50">
+          <circle cx="50" cy="50" r="45" fill="#000" stroke="#1db954" stroke-width="3"/>
+          <text x="50" y="70" font-family="Arial, sans-serif" font-size="48" font-weight="bold" fill="#fff" text-anchor="middle">0</text>
+        </svg>
+        <h1>Class 0</h1>
+      </div>
+      
+      <div class="nav-menu">
+        <a href="#" class="nav-item active" data-view="library">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 19V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+            <path d="M7 7h10M7 12h10M7 17h6"/>
+          </svg>
+          <span>Library</span>
+        </a>
+        <a href="#" class="nav-item" data-view="albums">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <circle cx="12" cy="12" r="3"/>
+          </svg>
+          <span>Albums</span>
+        </a>
+        <a href="#" class="nav-item" data-view="artists">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 2a10 10 0 0 1 10 10 10 10 0 0 1-10 10A10 10 0 0 1 2 12 10 10 0 0 1 12 2z"/>
+            <path d="M9 9h.01M15 9h.01M9 15s1.5 2 3 2 3-2 3-2"/>
+          </svg>
+          <span>Artists</span>
+        </a>
+        <a href="#" class="nav-item" data-view="playlists">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>
+          </svg>
+          <span>Playlists</span>
+        </a>
+        <a href="#" class="nav-item" data-view="stats">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 3v18h18"/>
+            <path d="M7 16V9M12 16V6M17 16v-4"/>
+          </svg>
+          <span>Statistics</span>
+        </a>
+      </div>
+      
+      <div class="sidebar-footer">
+        <button class="scan-button" id="scanButton">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/>
+          </svg>
+          <span>Scan Library</span>
+        </button>
+      </div>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+      <!-- Header with Search -->
+      <header class="header">
+        <div class="search-bar">
+          <input type="text" id="searchInput" placeholder="Search songs, artists, albums..." />
+          <button class="search-button">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+              <circle cx="11" cy="11" r="8"/>
+              <path d="m21 21-4.35-4.35"/>
+            </svg>
+          </button>
+        </div>
+        
+        <div class="header-actions">
+          <button class="icon-button" id="advancedSearchToggle">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+              <circle cx="12" cy="12" r="3"/>
+              <path d="M12 1v6m0 6v6M5.64 5.64l4.24 4.24m4.24 4.24l4.24 4.24M1 12h6m6 0h6M5.64 18.36l4.24-4.24m4.24-4.24l4.24-4.24"/>
+            </svg>
+          </button>
+        </div>
+      </header>
+
+      <!-- Advanced Search Panel -->
+      <div class="advanced-search" id="advancedSearch" style="display: none;">
+        <h3>Advanced Search</h3>
+        <div class="search-filters">
+          <input type="text" id="filterArtist" placeholder="Artist">
+          <input type="text" id="filterAlbum" placeholder="Album">
+          <input type="text" id="filterGenre" placeholder="Genre">
+          <input type="number" id="filterYear" placeholder="Year">
+          <button id="applyFilters">Apply Filters</button>
+          <button id="clearFilters">Clear</button>
+        </div>
+      </div>
+
+      <!-- Content Views -->
+      <div class="content-area">
+        <!-- Library View -->
+        <div class="view" id="libraryView">
+          <div class="view-header">
+            <h2>All Songs</h2>
+            <div class="view-controls">
+              <button class="btn-secondary" id="shuffleAll">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                  <path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/>
+                </svg>
+                Shuffle All
+              </button>
+              <button class="btn-primary" id="playAll">
+                <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+                  <path d="M8 5v14l11-7z"/>
+                </svg>
+                Play All
+              </button>
+            </div>
+          </div>
+          <div class="song-table">
+            <table>
+              <thead>
+                <tr>
+                  <th class="col-play"></th>
+                  <th class="col-title">Title</th>
+                  <th class="col-artist">Artist</th>
+                  <th class="col-album">Album</th>
+                  <th class="col-duration">Duration</th>
+                  <th class="col-plays">Plays</th>
+                </tr>
+              </thead>
+              <tbody id="songTableBody">
+                <!-- Songs will be inserted here -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Albums View -->
+        <div class="view hidden" id="albumsView">
+          <div class="view-header">
+            <h2>Albums</h2>
+          </div>
+          <div class="album-grid" id="albumGrid">
+            <!-- Albums will be inserted here -->
+          </div>
+        </div>
+
+        <!-- Album Detail View -->
+        <div class="view hidden" id="albumDetailView">
+          <button class="back-button" id="backToAlbums">← Back to Albums</button>
+          <div class="album-detail">
+            <div class="album-detail-header">
+              <img class="album-artwork" id="albumArtwork" src="" alt="Album artwork" />
+              <div class="album-info">
+                <h2 id="albumTitle"></h2>
+                <p class="album-artist" id="albumArtist"></p>
+                <p class="album-meta" id="albumMeta"></p>
+                <div class="album-actions">
+                  <button class="btn-primary" id="playAlbum">
+                    <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+                      <path d="M8 5v14l11-7z"/>
+                    </svg>
+                    Play Album
+                  </button>
+                  <button class="btn-secondary" id="shuffleAlbum">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                      <path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/>
+                    </svg>
+                    Shuffle
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div class="song-table">
+              <table>
+                <thead>
+                  <tr>
+                    <th class="col-track">#</th>
+                    <th class="col-play"></th>
+                    <th class="col-title">Title</th>
+                    <th class="col-duration">Duration</th>
+                  </tr>
+                </thead>
+                <tbody id="albumSongTableBody">
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Artists View -->
+        <div class="view hidden" id="artistsView">
+          <div class="view-header">
+            <h2>Artists</h2>
+          </div>
+          <div class="artist-list" id="artistList">
+            <!-- Artists will be inserted here -->
+          </div>
+        </div>
+
+        <!-- Playlists View -->
+        <div class="view hidden" id="playlistsView">
+          <div class="view-header">
+            <h2>Playlists</h2>
+            <button class="btn-primary" id="createPlaylist">+ New Playlist</button>
+          </div>
+          <div class="playlist-grid" id="playlistGrid">
+            <!-- Playlists will be inserted here -->
+          </div>
+        </div>
+
+        <!-- Statistics View -->
+        <div class="view hidden" id="statsView">
+          <div class="view-header">
+            <h2>Statistics</h2>
+          </div>
+          <div class="stats-container">
+            <div class="stats-grid" id="statsGrid">
+              <!-- Stats will be inserted here -->
+            </div>
+            <div class="stats-section">
+              <h3>Most Played Songs</h3>
+              <div class="song-list" id="mostPlayedList"></div>
+            </div>
+            <div class="stats-section">
+              <h3>Recently Played</h3>
+              <div class="song-list" id="recentlyPlayedList"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Now Playing Sidebar -->
+    <aside class="now-playing-sidebar" id="nowPlayingSidebar">
+      <div class="np-header">
+        <h3>Now Playing</h3>
+        <button class="close-sidebar" id="closeSidebar">✕</button>
+      </div>
+      
+      <div class="np-current-song">
+        <img class="np-artwork" id="npArtwork" src="" alt="Album artwork" />
+        <div class="np-song-info">
+          <div class="np-title" id="npTitle">No song playing</div>
+          <div class="np-artist" id="npArtist"></div>
+        </div>
+      </div>
+      
+      <div class="np-controls">
+        <button class="control-btn" id="prevButton">
+          <svg viewBox="0 0 24 24" fill="currentColor" width="24" height="24">
+            <path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/>
+          </svg>
+        </button>
+        <button class="control-btn control-btn-play" id="playPauseButton">
+          <svg viewBox="0 0 24 24" fill="currentColor" width="32" height="32">
+            <path d="M8 5v14l11-7z"/>
+          </svg>
+        </button>
+        <button class="control-btn" id="nextButton">
+          <svg viewBox="0 0 24 24" fill="currentColor" width="24" height="24">
+            <path d="M16 18h2V6h-2zm-11-7l8.5-6v12z"/>
+          </svg>
+        </button>
+      </div>
+      
+      <div class="np-progress">
+        <div class="progress-time" id="currentTime">0:00</div>
+        <div class="progress-bar">
+          <input type="range" id="progressBar" min="0" max="100" value="0" />
+        </div>
+        <div class="progress-time" id="totalTime">0:00</div>
+      </div>
+      
+      <div class="np-volume">
+        <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
+          <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
+        </svg>
+        <input type="range" id="volumeSlider" min="0" max="100" value="100" />
+      </div>
+      
+      <div class="np-queue">
+        <h4>Queue</h4>
+        <div class="queue-list" id="queueList">
+          <p class="empty-queue">Queue is empty</p>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <!-- Mini Player (when sidebar is closed) -->
+  <div class="mini-player" id="miniPlayer" style="display: none;">
+    <div class="mini-player-info">
+      <span class="mini-title" id="miniTitle">No song playing</span>
+      <span class="mini-artist" id="miniArtist"></span>
+    </div>
+    <div class="mini-controls">
+      <button class="mini-btn" id="miniPrev">
+        <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
+          <path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/>
+        </svg>
+      </button>
+      <button class="mini-btn" id="miniPlayPause">
+        <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
+          <path d="M8 5v14l11-7z"/>
+        </svg>
+      </button>
+      <button class="mini-btn" id="miniNext">
+        <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
+          <path d="M16 18h2V6h-2zm-11-7l8.5-6v12z"/>
+        </svg>
+      </button>
+    </div>
+    <button class="mini-expand" id="expandSidebar">
+      <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
+        <path d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z"/>
+      </svg>
+    </button>
+  </div>
+
+  <audio id="audioPlayer"></audio>
+  
+  <script src="app.js"></script>
+</body>
+</html>

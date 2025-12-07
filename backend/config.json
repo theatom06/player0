@@ -1,0 +1,9 @@
+{
+  "musicDirectories": [
+    "/home/stevealappat/Music"
+  ],
+  "supportedFormats": [".mp3", ".flac", ".m4a", ".ogg", ".wav", ".wma", ".aac"],
+  "dataDirectory": "./data",
+  "host": "0.0.0.0",
+  "port": 3000
+}
