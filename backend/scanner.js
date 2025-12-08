@@ -2,7 +2,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import { parseFile } from 'music-metadata';
 import Storage from './storage.js';
-import configData from './config.json' assert { type: 'json' };
+import configData from './config.json' with { type: 'json' };
 
 class MusicScanner {
   constructor() {

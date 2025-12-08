@@ -39,6 +39,16 @@ bun run start
 
 Edit `config.json` to set your music directories.
 
+You can specify multiple directories as an array:
+```json
+{
+  "musicDirectories": [
+    "/path/to/your/music1",
+    "/path/to/your/music2"
+  ]
+}
+```
+
 ## Default Port
 
 Server runs on http://localhost:3000

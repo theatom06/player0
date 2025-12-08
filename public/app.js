@@ -1,5 +1,5 @@
 // API Base URL
-const API_URL = 'http://localhost:3000/api';
+const API_URL = 'https://legendary-chainsaw-r9r6r5jjrr4fwq6p-3000.app.github.dev/api';
 
 // State
 let allSongs = [];
@@ -22,8 +22,22 @@ document.addEventListener('DOMContentLoaded', () => {
   setupSearch();
   setupPlayer();
   setupSidebar();
+  setupModal();
   loadSongs();
 });
+
+function setupModal() {
+  document.getElementById('closePlaylistModal').onclick = closePlaylistModal;
+  document.getElementById('cancelPlaylist').onclick = closePlaylistModal;
+  document.getElementById('savePlaylist').onclick = savePlaylist;
+  
+  // Close modal on outside click
+  document.getElementById('playlistModal').onclick = (e) => {
+    if (e.target.id === 'playlistModal') {
+      closePlaylistModal();
+    }
+  };
+}
 
 // Navigation
 function setupNavigation() {
@@ -181,13 +195,23 @@ function renderSongs(songs) {
   
   songs.forEach((song, index) => {
     const tr = document.createElement('tr');
+    const coverUrl = `${API_URL}/cover/${song.id}`;
+    const albumTitle = song.album || 'Unknown Album';
+    const truncatedAlbum = albumTitle.length > 30 ? albumTitle.substring(0, 30) + '...' : albumTitle;
     tr.innerHTML = `
       <td class="col-play">
-        <button class="play-button" onclick="playSongFromList(${index})">▶️</button>
+        <button class="play-button" onclick="playSongFromList(${index})">
+          <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+            <path d="M8 5v14l11-7z"/>
+          </svg>
+        </button>
+      </td>
+      <td class="col-cover">
+        <img class="song-cover" src="${coverUrl}" alt="" onerror="this.style.display='none'" />
       </td>
       <td class="col-title">${escapeHtml(song.title || 'Unknown')}</td>
       <td class="col-artist">${escapeHtml(song.artist || 'Unknown Artist')}</td>
-      <td class="col-album">${escapeHtml(song.album || 'Unknown Album')}</td>
+      <td class="col-album" title="${escapeHtml(albumTitle)}">${escapeHtml(truncatedAlbum)}</td>
       <td class="col-duration">${formatDuration(song.duration)}</td>
       <td class="col-plays">${song.playCount || 0}</td>
     `;
@@ -219,10 +243,19 @@ function renderAlbums(albums) {
     const card = document.createElement('div');
     card.className = 'album-card';
     const coverUrl = album.songs && album.songs[0] ? `${API_URL}/cover/${album.songs[0].id}` : '';
+    const albumTitle = album.album || 'Unknown Album';
+    const truncatedTitle = albumTitle.length > 25 ? albumTitle.substring(0, 25) + '...' : albumTitle;
     card.innerHTML = `
-      <img class="album-artwork" src="${coverUrl}" alt="${escapeHtml(album.album || 'Unknown Album')}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />
-      <div class="album-artwork" style="display:none; font-size: 48px;">💿</div>
-      <h3>${escapeHtml(album.album || 'Unknown Album')}</h3>
+      <div class="album-cover-wrapper">
+        <img class="album-artwork" src="${coverUrl}" alt="${escapeHtml(albumTitle)}" onerror="this.style.display='none';" />
+        <div class="album-placeholder">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="48" height="48">
+            <circle cx="12" cy="12" r="10"/>
+            <circle cx="12" cy="12" r="3"/>
+          </svg>
+        </div>
+      </div>
+      <h3 title="${escapeHtml(albumTitle)}">${escapeHtml(truncatedTitle)}</h3>
       <p>${escapeHtml(album.artist || 'Unknown Artist')}</p>
       <p style="font-size: 12px; margin-top: 4px;">${album.songCount} songs</p>
     `;
@@ -251,11 +284,14 @@ function renderAlbumDetail(album) {
   
   // Set album artwork
   const albumArtwork = document.getElementById('albumArtwork');
+  albumArtwork.style.display = 'block';
   if (album.songs && album.songs[0]) {
-    albumArtwork.src = `${API_URL}/cover/${album.songs[0].id}`;
     albumArtwork.onerror = () => {
       albumArtwork.style.display = 'none';
     };
+    albumArtwork.src = `${API_URL}/cover/${album.songs[0].id}`;
+  } else {
+    albumArtwork.style.display = 'none';
   }
   
   const tbody = document.getElementById('albumSongTableBody');
@@ -266,7 +302,11 @@ function renderAlbumDetail(album) {
     tr.innerHTML = `
       <td class="col-track">${song.trackNumber || '-'}</td>
       <td class="col-play">
-        <button class="play-button" onclick="playAlbumSong(${index})">▶️</button>
+        <button class="play-button" onclick="playAlbumSong(${index})">
+          <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+            <path d="M8 5v14l11-7z"/>
+          </svg>
+        </button>
       </td>
       <td class="col-title">${escapeHtml(song.title)}</td>
       <td class="col-duration">${formatDuration(song.duration)}</td>
@@ -338,29 +378,51 @@ function renderPlaylists(playlists) {
     const card = document.createElement('div');
     card.className = 'playlist-card';
     card.innerHTML = `
-      <div class="playlist-icon">📝</div>
+      <div class="playlist-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="48" height="48">
+          <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>
+        </svg>
+      </div>
       <h3>${escapeHtml(playlist.name)}</h3>
       <p>${playlist.songCount || 0} songs</p>
     `;
     grid.appendChild(card);
   });
   
-  document.getElementById('createPlaylist').onclick = createPlaylist;
+  document.getElementById('createPlaylist').onclick = openPlaylistModal;
 }
 
-async function createPlaylist() {
-  const name = prompt('Enter playlist name:');
-  if (!name) return;
+function openPlaylistModal() {
+  document.getElementById('playlistModal').style.display = 'flex';
+  document.getElementById('playlistName').value = '';
+  document.getElementById('playlistDescription').value = '';
+  document.getElementById('playlistName').focus();
+}
+
+function closePlaylistModal() {
+  document.getElementById('playlistModal').style.display = 'none';
+}
+
+async function savePlaylist() {
+  const name = document.getElementById('playlistName').value.trim();
+  const description = document.getElementById('playlistDescription').value.trim();
+  
+  if (!name) {
+    alert('Please enter a playlist name');
+    return;
+  }
   
   try {
     await fetch(`${API_URL}/playlists`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, description: '' })
+      body: JSON.stringify({ name, description, songs: [] })
     });
+    closePlaylistModal();
     loadPlaylists();
   } catch (error) {
     console.error('Error creating playlist:', error);
+    alert('Error creating playlist');
   }
 }
 
@@ -501,17 +563,17 @@ function playSong(song) {
   audioPlayer.src = `${API_URL}/stream/${song.id}`;
   audioPlayer.play();
   
-  document.getElementById('npTitle').textContent = song.title;
-  document.getElementById('npArtist').textContent = song.artist;
-  document.getElementById('miniTitle').textContent = song.title;
-  document.getElementById('miniArtist').textContent = song.artist;
+  document.getElementById('npTitle').textContent = song.title || 'Unknown';
+  document.getElementById('npArtist').textContent = song.artist || 'Unknown Artist';
+  document.getElementById('miniTitle').textContent = song.title || 'Unknown';
+  document.getElementById('miniArtist').textContent = song.artist || 'Unknown Artist';
   
   // Set album artwork
   const npArtwork = document.getElementById('npArtwork');
-  npArtwork.src = `${API_URL}/cover/${song.id}`;
   npArtwork.onerror = () => {
     npArtwork.style.display = 'none';
   };
+  npArtwork.src = `${API_URL}/cover/${song.id}`;
   npArtwork.style.display = 'block';
   
   updateQueue();

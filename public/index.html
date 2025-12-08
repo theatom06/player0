@@ -11,11 +11,12 @@
     <!-- Sidebar Navigation -->
     <nav class="sidebar">
       <div class="logo">
-        <svg class="logo-icon" viewBox="0 0 100 100" width="50" height="50">
-          <circle cx="50" cy="50" r="45" fill="#000" stroke="#1db954" stroke-width="3"/>
-          <text x="50" y="70" font-family="Arial, sans-serif" font-size="48" font-weight="bold" fill="#fff" text-anchor="middle">0</text>
+        <svg class="logo-icon" viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/>
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M12 2v4M12 18v4M2 12h4M18 12h4"/>
         </svg>
-        <h1>Class 0</h1>
+        <h1>Music Player</h1>
       </div>
       
       <div class="nav-menu">
@@ -128,6 +129,7 @@
               <thead>
                 <tr>
                   <th class="col-play"></th>
+                  <th class="col-cover"></th>
                   <th class="col-title">Title</th>
                   <th class="col-artist">Artist</th>
                   <th class="col-album">Album</th>
@@ -323,6 +325,26 @@
         <path d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z"/>
       </svg>
     </button>
+  </div>
+
+  <!-- Modal for Create Playlist -->
+  <div class="modal" id="playlistModal" style="display: none;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Create New Playlist</h3>
+        <button class="modal-close" id="closePlaylistModal">✕</button>
+      </div>
+      <div class="modal-body">
+        <label for="playlistName">Playlist Name</label>
+        <input type="text" id="playlistName" placeholder="Enter playlist name..." />
+        <label for="playlistDescription">Description (optional)</label>
+        <textarea id="playlistDescription" placeholder="Enter description..." rows="3"></textarea>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" id="cancelPlaylist">Cancel</button>
+        <button class="btn-primary" id="savePlaylist">Create Playlist</button>
+      </div>
+    </div>
   </div>
 
   <audio id="audioPlayer"></audio>

@@ -5,7 +5,7 @@ import { fileURLToPath } from 'url';
 import fs from 'fs';
 import Storage from './storage.js';
 import MusicScanner from './scanner.js';
-import configData from './config.json' assert { type: 'json' };
+import configData from './config.json' with { type: 'json' };
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -241,30 +241,30 @@ app.get('/api/cover/:id', async (req, res) => {
     const song = await storage.getSongById(req.params.id);
     
     if (!song || !song.filePath) {
-      return res.status(404).send('Song not found');
+      return res.status(404).json({ error: 'Song not found' });
     }
     
     const filePath = song.filePath;
     
     if (!fs.existsSync(filePath)) {
-      return res.status(404).send('File not found');
+      return res.status(404).json({ error: 'File not found' });
     }
     
-    // Import parseFile dynamically
+    // Import parseFile from music-metadata
     const { parseFile } = await import('music-metadata');
     const metadata = await parseFile(filePath);
     
     if (metadata.common.picture && metadata.common.picture.length > 0) {
       const picture = metadata.common.picture[0];
-      res.set('Content-Type', picture.format);
-      res.set('Cache-Control', 'public, max-age=86400'); // Cache for 24 hours
-      res.send(picture.data);
+      res.set('Content-Type', picture.format || 'image/jpeg');
+      res.set('Cache-Control', 'public, max-age=86400');
+      return res.send(Buffer.from(picture.data));
     } else {
-      res.status(404).send('No cover art found');
+      return res.status(404).json({ error: 'No cover art found' });
     }
   } catch (error) {
     console.error('Error extracting cover art:', error);
-    res.status(500).send('Error extracting cover art');
+    return res.status(500).json({ error: 'Error extracting cover art' });
   }
 });
 
@@ -379,7 +379,7 @@ app.post('/api/scan', async (req, res) => {
 });
 
 // Serve frontend
-app.get('*', (req, res) => {
+app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, '../public/index.html'));
 });
 

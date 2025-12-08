@@ -1,6 +1,6 @@
 {
   "musicDirectories": [
-    "/home/stevealappat/Music"
+    "/workspaces/player0/backend/music"
   ],
   "supportedFormats": [".mp3", ".flac", ".m4a", ".ogg", ".wav", ".wma", ".aac"],
   "dataDirectory": "./data",
