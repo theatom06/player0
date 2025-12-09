@@ -189,7 +189,15 @@ function renderSongs(songs) {
   tbody.innerHTML = '';
   
   if (songs.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 48px;">No songs found</td></tr>';
+    tbody.innerHTML = `<tr><td colspan="7" class="empty-state">
+      <div class="empty-state-content">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="64" height="64">
+          <path d="M9 18V5l12-2v13M9 18l-5 1V6l5-1M9 18l5-1m0-13V6"/>
+        </svg>
+        <h3>No Songs Found</h3>
+        <p>Click "Scan Library" to add your music</p>
+      </div>
+    </td></tr>`;
     return;
   }
   
@@ -238,6 +246,18 @@ async function loadAlbums() {
 function renderAlbums(albums) {
   const grid = document.getElementById('albumGrid');
   grid.innerHTML = '';
+  
+  if (albums.length === 0) {
+    grid.innerHTML = `<div class="empty-state-content">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="64" height="64">
+        <circle cx="12" cy="12" r="10"/>
+        <circle cx="12" cy="12" r="3"/>
+      </svg>
+      <h3>No Albums Found</h3>
+      <p>Your albums will appear here once you scan your library</p>
+    </div>`;
+    return;
+  }
   
   albums.forEach(album => {
     const card = document.createElement('div');
@@ -341,6 +361,18 @@ function renderArtists(artists) {
   const list = document.getElementById('artistList');
   list.innerHTML = '';
   
+  if (artists.length === 0) {
+    list.innerHTML = `<div class="empty-state-content">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="64" height="64">
+        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+        <circle cx="12" cy="7" r="4"/>
+      </svg>
+      <h3>No Artists Found</h3>
+      <p>Artists will appear here after scanning your music</p>
+    </div>`;
+    return;
+  }
+  
   artists.forEach(artist => {
     const item = document.createElement('div');
     item.className = 'artist-item';
@@ -373,6 +405,17 @@ async function loadPlaylists() {
 function renderPlaylists(playlists) {
   const grid = document.getElementById('playlistGrid');
   grid.innerHTML = '';
+  
+  if (playlists.length === 0) {
+    grid.innerHTML = `<div class="empty-state-content">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="64" height="64">
+        <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>
+      </svg>
+      <h3>No Playlists Yet</h3>
+      <p>Create your first playlist to organize your music</p>
+    </div>`;
+    return;
+  }
   
   playlists.forEach(playlist => {
     const card = document.createElement('div');
@@ -439,29 +482,47 @@ async function loadStats() {
 
 function renderStats(stats) {
   const grid = document.getElementById('statsGrid');
+  
+  // Check if we have any data
+  const hasData = stats && stats.totalSongs > 0;
+  
+  if (!hasData) {
+    grid.innerHTML = `<div class="empty-state-content" style="grid-column: 1 / -1;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="64" height="64">
+        <path d="M3 3v18h18"/>
+        <path d="M7 16V9M12 16V6M17 16v-4"/>
+      </svg>
+      <h3>No Statistics Yet</h3>
+      <p>Start playing some music to see your stats</p>
+    </div>`;
+    document.getElementById('mostPlayedList').innerHTML = '<p style="text-align: center; color: var(--text-secondary); padding: 24px;">No plays recorded yet</p>';
+    document.getElementById('recentlyPlayedList').innerHTML = '<p style="text-align: center; color: var(--text-secondary); padding: 24px;">No recent plays</p>';
+    return;
+  }
+  
   grid.innerHTML = `
     <div class="stat-card">
-      <div class="stat-value">${stats.totalSongs}</div>
+      <div class="stat-value">${stats.totalSongs || 0}</div>
       <div class="stat-label">Total Songs</div>
     </div>
     <div class="stat-card">
-      <div class="stat-value">${stats.uniqueArtists}</div>
+      <div class="stat-value">${stats.uniqueArtists || 0}</div>
       <div class="stat-label">Artists</div>
     </div>
     <div class="stat-card">
-      <div class="stat-value">${stats.uniqueAlbums}</div>
+      <div class="stat-value">${stats.uniqueAlbums || 0}</div>
       <div class="stat-label">Albums</div>
     </div>
     <div class="stat-card">
-      <div class="stat-value">${stats.uniqueGenres}</div>
+      <div class="stat-value">${stats.uniqueGenres || 0}</div>
       <div class="stat-label">Genres</div>
     </div>
     <div class="stat-card">
-      <div class="stat-value">${formatDuration(stats.totalDuration)}</div>
+      <div class="stat-value">${formatDuration(stats.totalDuration || 0)}</div>
       <div class="stat-label">Total Duration</div>
     </div>
     <div class="stat-card">
-      <div class="stat-value">${stats.totalPlays}</div>
+      <div class="stat-value">${stats.totalPlays || 0}</div>
       <div class="stat-label">Total Plays</div>
     </div>
   `;
@@ -469,18 +530,22 @@ function renderStats(stats) {
   // Most played
   const mostPlayedList = document.getElementById('mostPlayedList');
   mostPlayedList.innerHTML = '';
-  stats.mostPlayed.forEach(song => {
-    const item = document.createElement('div');
-    item.className = 'song-list-item';
-    item.innerHTML = `
-      <div>
-        <div>${escapeHtml(song.title)}</div>
-        <div style="font-size: 12px; color: var(--text-secondary);">${escapeHtml(song.artist)}</div>
-      </div>
-      <div style="color: var(--text-secondary);">${song.playCount} plays</div>
-    `;
-    mostPlayedList.appendChild(item);
-  });
+  if (stats.mostPlayed && stats.mostPlayed.length > 0) {
+    stats.mostPlayed.forEach(song => {
+      const item = document.createElement('div');
+      item.className = 'song-list-item';
+      item.innerHTML = `
+        <div>
+          <div>${escapeHtml(song.title || 'Unknown')}</div>
+          <div style="font-size: 12px; color: var(--text-secondary);">${escapeHtml(song.artist || 'Unknown Artist')}</div>
+        </div>
+        <div style="color: var(--text-secondary);">${song.playCount || 0} plays</div>
+      `;
+      mostPlayedList.appendChild(item);
+    });
+  } else {
+    mostPlayedList.innerHTML = '<p style="text-align: center; color: var(--text-secondary); padding: 24px;">No plays recorded yet</p>';
+  }
 }
 
 // Player
