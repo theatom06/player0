@@ -46,7 +46,11 @@ app.use(helmet({
 
 // Configure CORS with specific origin (adjust in production)
 const corsOptions = {
-  origin: process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : '*',
+  origin: process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : (
+    process.env.NODE_ENV === 'production' 
+      ? false  // Require explicit configuration in production
+      : '*'    // Allow all origins in development only
+  ),
   optionsSuccessStatus: 200
 };
 app.use(cors(corsOptions));
@@ -57,7 +61,7 @@ app.use(express.json({ limit: '1mb' }));
 // Rate limiting to prevent abuse
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 1000, // Limit each IP to 1000 requests per windowMs
+  max: 2000, // Limit each IP to 2000 requests per windowMs (allows ~2 req/sec for streaming)
   message: 'Too many requests from this IP, please try again later.',
   standardHeaders: true,
   legacyHeaders: false,
@@ -282,8 +286,10 @@ app.get('/api/stream/:id', idValidation, async (req, res) => {
       const start = parseInt(parts[0], 10);
       const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
       
-      // Validate range values
-      if (isNaN(start) || isNaN(end) || start < 0 || end >= fileSize || start > end) {
+      // Validate range values (byte ranges are 0-indexed and inclusive)
+      // Valid range: 0 <= start <= end < fileSize
+      if (isNaN(start) || isNaN(end) || start < 0 || end < 0 || 
+          start >= fileSize || end >= fileSize || start > end) {
         return res.status(416).json({ error: 'Invalid range' });
       }
       

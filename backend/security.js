@@ -30,7 +30,14 @@ export function isPathSafe(filePath, allowedDirs) {
   // Check if the resolved path starts with any of the allowed directories
   return allowedDirs.some(allowedDir => {
     const resolvedAllowedDir = path.resolve(allowedDir);
-    return resolvedPath.startsWith(resolvedAllowedDir);
+    // Ensure the allowed directory ends with a path separator to prevent bypass
+    const normalizedAllowedDir = resolvedAllowedDir.endsWith(path.sep) 
+      ? resolvedAllowedDir 
+      : resolvedAllowedDir + path.sep;
+    
+    // Check if path is exactly the allowed dir or within it
+    return resolvedPath === resolvedAllowedDir || 
+           resolvedPath.startsWith(normalizedAllowedDir);
   });
 }
 
@@ -104,14 +111,25 @@ export const idValidation = [
 
 /**
  * Sanitize error messages to prevent information leakage
- * @param {Error} error - The error object
+ * @param {Error|any} error - The error object
  * @returns {string} - Sanitized error message
  */
 export function sanitizeError(error) {
+  // Handle cases where error might not be an Error object
+  if (!error) {
+    return 'An error occurred';
+  }
+  
   if (process.env.NODE_ENV === 'production') {
     // In production, don't expose internal error details
     return 'An internal error occurred';
   }
+  
   // In development, show the error message but not the stack trace
-  return error.message || 'An error occurred';
+  if (error instanceof Error) {
+    return error.message || 'An error occurred';
+  }
+  
+  // Handle non-Error objects
+  return String(error);
 }
