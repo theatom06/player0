@@ -88,11 +88,13 @@ This document outlines the security measures implemented in the Project 0 Music 
 
 ### For Deployment
 
-1. **Set Environment Variables**:
+1. **Set Environment Variables** (REQUIRED in production):
    ```bash
    export NODE_ENV=production
-   export ALLOWED_ORIGINS="https://yourdomain.com"
+   export ALLOWED_ORIGINS="https://yourdomain.com,https://app.yourdomain.com"
    ```
+   
+   **Important**: The server will fail to start in production mode without setting `ALLOWED_ORIGINS` to prevent accidental misconfigurations.
 
 2. **File System Permissions**:
    - Music directories should have read-only access for the server process

@@ -48,7 +48,7 @@ app.use(helmet({
 const corsOptions = {
   origin: process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : (
     process.env.NODE_ENV === 'production' 
-      ? false  // Require explicit configuration in production
+      ? (() => { throw new Error('ALLOWED_ORIGINS environment variable must be set in production'); })()
       : '*'    // Allow all origins in development only
   ),
   optionsSuccessStatus: 200
@@ -287,9 +287,9 @@ app.get('/api/stream/:id', idValidation, async (req, res) => {
       const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
       
       // Validate range values (byte ranges are 0-indexed and inclusive)
-      // Valid range: 0 <= start <= end < fileSize
+      // Valid range: 0 <= start <= end <= fileSize - 1
       if (isNaN(start) || isNaN(end) || start < 0 || end < 0 || 
-          start >= fileSize || end >= fileSize || start > end) {
+          start >= fileSize || end > fileSize - 1 || start > end) {
         return res.status(416).json({ error: 'Invalid range' });
       }
       

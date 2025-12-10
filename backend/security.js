@@ -62,7 +62,7 @@ export const searchValidation = [
   query('artist').optional().isString().trim().isLength({ max: 200 }),
   query('album').optional().isString().trim().isLength({ max: 200 }),
   query('genre').optional().isString().trim().isLength({ max: 100 }),
-  query('year').optional().isInt({ min: 1900, max: 2100 }),
+  query('year').optional().isInt({ min: 1900, max: new Date().getFullYear() + 10 }),
   validate
 ];
 
@@ -89,7 +89,7 @@ export const playlistUpdateValidation = [
  * Validation rules for play history
  */
 export const playHistoryValidation = [
-  body('durationPlayed').optional().isInt({ min: 0, max: 86400 }),
+  body('durationPlayed').optional().isInt({ min: 0, max: 172800 }), // Max 48 hours for long audio files
   validate
 ];
 
