@@ -13,9 +13,22 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const storage = new Storage(configData.dataDirectory);
 
+// Security headers
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+  next();
+});
+
 // Middleware
-app.use(cors());
-app.use(express.json());
+app.use(cors({
+  origin: process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : '*',
+  credentials: true
+}));
+app.use(express.json({ limit: '10mb' })); // Limit request body size
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Serve static files from public directory
 app.use(express.static(path.join(__dirname, '../public')));
@@ -58,6 +71,24 @@ app.get('/api/songs/:id', async (req, res) => {
 app.get('/api/search', async (req, res) => {
   try {
     const { q, artist, album, genre, year } = req.query;
+    
+    // Validate and sanitize inputs
+    if (q && (typeof q !== 'string' || q.length > 100)) {
+      return res.status(400).json({ error: 'Invalid search query' });
+    }
+    if (artist && (typeof artist !== 'string' || artist.length > 100)) {
+      return res.status(400).json({ error: 'Invalid artist query' });
+    }
+    if (album && (typeof album !== 'string' || album.length > 100)) {
+      return res.status(400).json({ error: 'Invalid album query' });
+    }
+    if (genre && (typeof genre !== 'string' || genre.length > 100)) {
+      return res.status(400).json({ error: 'Invalid genre query' });
+    }
+    if (year && (isNaN(year) || parseInt(year) < 1900 || parseInt(year) > 2100)) {
+      return res.status(400).json({ error: 'Invalid year' });
+    }
+    
     let songs = await storage.getSongs();
     
     if (q) {
@@ -132,6 +163,12 @@ app.get('/api/albums', async (req, res) => {
 app.get('/api/albums/:artist/:album', async (req, res) => {
   try {
     const { artist, album } = req.params;
+    
+    // Validate parameters length
+    if (artist.length > 200 || album.length > 200) {
+      return res.status(400).json({ error: 'Invalid parameters' });
+    }
+    
     const songs = await storage.getSongs();
     
     const albumSongs = songs.filter(song =>
@@ -287,6 +324,16 @@ app.get('/api/cover/:id', async (req, res) => {
 // Playlists
 
 // Get all playlists
+app.get('/api/playlists', async (req, res) => {
+  try {
+    const playlists = await storage.getPlaylists();
+    res.json(playlists);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Create playlist
 app.post('/api/playlists', async (req, res) => {
   try {
     const { name, description, songIds } = req.body;
@@ -304,6 +351,11 @@ app.post('/api/playlists', async (req, res) => {
       return res.status(400).json({ error: 'Invalid song IDs' });
     }
     
+    // Limit array size to prevent DoS
+    if (songIds.length > 1000) {
+      return res.status(400).json({ error: 'Too many songs (max 1000)' });
+    }
+    
     const playlist = await storage.createPlaylist({ name, description, songIds });
     res.json(playlist);
   } catch (error) {
@@ -314,6 +366,11 @@ app.post('/api/playlists', async (req, res) => {
 // Get playlist by ID
 app.get('/api/playlists/:id', async (req, res) => {
   try {
+    // Validate playlist ID
+    if (!/^[a-zA-Z0-9-]+$/.test(req.params.id)) {
+      return res.status(400).json({ error: 'Invalid playlist ID' });
+    }
+    
     const playlist = await storage.getPlaylistById(req.params.id);
     if (playlist) {
       res.json(playlist);
@@ -325,19 +382,29 @@ app.get('/api/playlists/:id', async (req, res) => {
   }
 });
 
-// Create playlist
-app.post('/api/playlists', async (req, res) => {
-  try {
-    const playlist = await storage.createPlaylist(req.body);
-    res.status(201).json(playlist);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
 // Update playlist
 app.put('/api/playlists/:id', async (req, res) => {
   try {
+    // Validate playlist ID
+    if (!/^[a-zA-Z0-9-]+$/.test(req.params.id)) {
+      return res.status(400).json({ error: 'Invalid playlist ID' });
+    }
+    
+    const { name, description, songIds } = req.body;
+    
+    // Validate inputs
+    if (name && (typeof name !== 'string' || name.length > 200)) {
+      return res.status(400).json({ error: 'Invalid playlist name' });
+    }
+    
+    if (description && (typeof description !== 'string' || description.length > 1000)) {
+      return res.status(400).json({ error: 'Invalid description' });
+    }
+    
+    if (songIds && (!Array.isArray(songIds) || songIds.length > 1000)) {
+      return res.status(400).json({ error: 'Invalid song IDs' });
+    }
+    
     const success = await storage.updatePlaylist(req.params.id, req.body);
     if (success) {
       const playlist = await storage.getPlaylistById(req.params.id);
@@ -353,6 +420,11 @@ app.put('/api/playlists/:id', async (req, res) => {
 // Delete playlist
 app.delete('/api/playlists/:id', async (req, res) => {
   try {
+    // Validate playlist ID
+    if (!/^[a-zA-Z0-9-]+$/.test(req.params.id)) {
+      return res.status(400).json({ error: 'Invalid playlist ID' });
+    }
+    
     const success = await storage.deletePlaylist(req.params.id);
     if (success) {
       res.json({ message: 'Playlist deleted' });
@@ -392,6 +464,12 @@ app.post('/api/play/:id', async (req, res) => {
 app.get('/api/history', async (req, res) => {
   try {
     const limit = parseInt(req.query.limit) || 100;
+    
+    // Validate limit
+    if (limit < 1 || limit > 1000) {
+      return res.status(400).json({ error: 'Invalid limit (1-1000)' });
+    }
+    
     const history = await storage.getPlayHistory(limit);
     res.json(history);
   } catch (error) {

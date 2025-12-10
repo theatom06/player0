@@ -99,6 +99,56 @@
 - 🐛 Fixed navigation hover states
 - 🐛 Fixed album cover zoom overflow
 
+## Security Vulnerabilities Fixed
+
+### 🔒 Critical Issues Resolved
+
+#### 1. **Missing CORS Configuration**
+- **Risk**: Any website could make requests to your API
+- **Fix**: Configured CORS with optional origin restriction via environment variable
+- **Impact**: Prevents unauthorized cross-origin requests
+
+#### 2. **No Request Size Limits**
+- **Risk**: DoS attacks via massive JSON payloads
+- **Fix**: Added 10MB limit on JSON and URL-encoded bodies
+- **Impact**: Prevents memory exhaustion attacks
+
+#### 3. **Missing Security Headers**
+- **Risk**: XSS, clickjacking, and MIME-sniffing attacks
+- **Fix**: Added security headers:
+  - `X-Content-Type-Options: nosniff`
+  - `X-Frame-Options: DENY`
+  - `X-XSS-Protection: 1; mode=block`
+  - `Strict-Transport-Security` for HTTPS
+- **Impact**: Hardens browser security
+
+#### 4. **Insufficient Input Validation**
+- **Risk**: Injection attacks, DoS via large inputs
+- **Fixes Applied**:
+  - Search query length limits (100 chars)
+  - Year range validation (1900-2100)
+  - Album/artist parameter limits (200 chars)
+  - Playlist name/description limits (200/1000 chars)
+  - Song array size limits (1000 max)
+  - History limit validation (1-1000)
+- **Impact**: Prevents malformed or malicious inputs
+
+#### 5. **Duplicate Routes**
+- **Risk**: Confusion and potential security bypasses
+- **Fix**: Removed duplicate playlist creation route
+- **Impact**: Cleaner, more maintainable codebase
+
+#### 6. **Missing Route for GET Playlists**
+- **Risk**: API inconsistency
+- **Fix**: Added proper GET /api/playlists route
+- **Impact**: Complete REST API implementation
+
+### Production Recommendations
+- Configure `ALLOWED_ORIGINS` environment variable for CORS
+- Use HTTPS in production with reverse proxy
+- Consider rate limiting for public deployments
+- Keep dependencies updated regularly
+
 ## Project Information
 - **Project Name**: Player 0
 - **Version**: Enhanced UI with Security Updates
