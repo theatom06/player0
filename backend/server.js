@@ -3,9 +3,23 @@ import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 import Storage from './storage.js';
 import MusicScanner from './scanner.js';
 import configData from './config.json' with { type: 'json' };
+import {
+  validate,
+  isPathSafe,
+  fileExists,
+  searchValidation,
+  playlistCreateValidation,
+  playlistUpdateValidation,
+  playHistoryValidation,
+  historyLimitValidation,
+  idValidation,
+  sanitizeError
+} from './security.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -13,9 +27,48 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const storage = new Storage(configData.dataDirectory);
 
-// Middleware
-app.use(cors());
-app.use(express.json());
+// Security Middleware
+// Add helmet for security headers
+app.use(helmet({
+  contentSecurityPolicy: false, // Disabled for now to allow inline scripts in frontend
+  crossOriginEmbedderPolicy: false // Disabled to allow audio streaming
+}));
+
+// Configure CORS with specific origin (adjust in production)
+const corsOptions = {
+  origin: process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : '*',
+  optionsSuccessStatus: 200
+};
+app.use(cors(corsOptions));
+
+// Body parser with size limits to prevent DoS
+app.use(express.json({ limit: '1mb' }));
+
+// Rate limiting to prevent abuse
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 1000, // Limit each IP to 1000 requests per windowMs
+  message: 'Too many requests from this IP, please try again later.',
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Apply rate limiter to API routes
+app.use('/api/', limiter);
+
+// Stricter rate limit for write operations
+const writeLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  message: 'Too many requests, please try again later.'
+});
+
+// Even stricter rate limit for scan operations
+const scanLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 5,
+  message: 'Too many scan requests, please try again later.'
+});
 
 // Serve static files from public directory
 app.use(express.static(path.join(__dirname, '../public')));
@@ -31,12 +84,12 @@ app.get('/api/songs', async (req, res) => {
     const songs = await storage.getSongs();
     res.json(songs);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: sanitizeError(error) });
   }
 });
 
 // Get song by ID
-app.get('/api/songs/:id', async (req, res) => {
+app.get('/api/songs/:id', idValidation, async (req, res) => {
   try {
     const song = await storage.getSongById(req.params.id);
     if (song) {
@@ -45,12 +98,12 @@ app.get('/api/songs/:id', async (req, res) => {
       res.status(404).json({ error: 'Song not found' });
     }
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: sanitizeError(error) });
   }
 });
 
 // Search songs
-app.get('/api/search', async (req, res) => {
+app.get('/api/search', searchValidation, async (req, res) => {
   try {
     const { q, artist, album, genre, year } = req.query;
     let songs = await storage.getSongs();
@@ -88,7 +141,7 @@ app.get('/api/search', async (req, res) => {
     
     res.json(songs);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: sanitizeError(error) });
   }
 });
 
@@ -119,7 +172,7 @@ app.get('/api/albums', async (req, res) => {
     
     res.json(albums);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: sanitizeError(error) });
   }
 });
 
@@ -151,7 +204,7 @@ app.get('/api/albums/:artist/:album', async (req, res) => {
       res.status(404).json({ error: 'Album not found' });
     }
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: sanitizeError(error) });
   }
 });
 
@@ -185,12 +238,12 @@ app.get('/api/artists', async (req, res) => {
     
     res.json(artists);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: sanitizeError(error) });
   }
 });
 
 // Stream audio file
-app.get('/api/stream/:id', async (req, res) => {
+app.get('/api/stream/:id', idValidation, async (req, res) => {
   try {
     const song = await storage.getSongById(req.params.id);
     
@@ -200,7 +253,13 @@ app.get('/api/stream/:id', async (req, res) => {
     
     const filePath = song.filePath;
     
-    if (!fs.existsSync(filePath)) {
+    // Security: Validate that the file path is within allowed directories
+    if (!isPathSafe(filePath, configData.musicDirectories)) {
+      console.error(`Path traversal attempt blocked: ${filePath}`);
+      return res.status(403).json({ error: 'Access denied' });
+    }
+    
+    if (!fileExists(filePath)) {
       return res.status(404).json({ error: 'File not found' });
     }
     
@@ -212,6 +271,12 @@ app.get('/api/stream/:id', async (req, res) => {
       const parts = range.replace(/bytes=/, '').split('-');
       const start = parseInt(parts[0], 10);
       const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
+      
+      // Validate range values
+      if (isNaN(start) || isNaN(end) || start < 0 || end >= fileSize || start > end) {
+        return res.status(416).json({ error: 'Invalid range' });
+      }
+      
       const chunksize = (end - start) + 1;
       const file = fs.createReadStream(filePath, { start, end });
       const head = {
@@ -231,12 +296,13 @@ app.get('/api/stream/:id', async (req, res) => {
       fs.createReadStream(filePath).pipe(res);
     }
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Stream error:', error);
+    res.status(500).json({ error: sanitizeError(error) });
   }
 });
 
 // Get album cover art
-app.get('/api/cover/:id', async (req, res) => {
+app.get('/api/cover/:id', idValidation, async (req, res) => {
   try {
     const song = await storage.getSongById(req.params.id);
     
@@ -246,7 +312,13 @@ app.get('/api/cover/:id', async (req, res) => {
     
     const filePath = song.filePath;
     
-    if (!fs.existsSync(filePath)) {
+    // Security: Validate that the file path is within allowed directories
+    if (!isPathSafe(filePath, configData.musicDirectories)) {
+      console.error(`Path traversal attempt blocked: ${filePath}`);
+      return res.status(403).json({ error: 'Access denied' });
+    }
+    
+    if (!fileExists(filePath)) {
       return res.status(404).json({ error: 'File not found' });
     }
     
@@ -264,7 +336,7 @@ app.get('/api/cover/:id', async (req, res) => {
     }
   } catch (error) {
     console.error('Error extracting cover art:', error);
-    return res.status(500).json({ error: 'Error extracting cover art' });
+    return res.status(500).json({ error: sanitizeError(error) });
   }
 });
 
@@ -276,12 +348,12 @@ app.get('/api/playlists', async (req, res) => {
     const playlists = await storage.getPlaylists();
     res.json(playlists);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: sanitizeError(error) });
   }
 });
 
 // Get playlist by ID
-app.get('/api/playlists/:id', async (req, res) => {
+app.get('/api/playlists/:id', idValidation, async (req, res) => {
   try {
     const playlist = await storage.getPlaylistById(req.params.id);
     if (playlist) {
@@ -290,22 +362,22 @@ app.get('/api/playlists/:id', async (req, res) => {
       res.status(404).json({ error: 'Playlist not found' });
     }
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: sanitizeError(error) });
   }
 });
 
 // Create playlist
-app.post('/api/playlists', async (req, res) => {
+app.post('/api/playlists', writeLimiter, playlistCreateValidation, async (req, res) => {
   try {
     const playlist = await storage.createPlaylist(req.body);
     res.status(201).json(playlist);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: sanitizeError(error) });
   }
 });
 
 // Update playlist
-app.put('/api/playlists/:id', async (req, res) => {
+app.put('/api/playlists/:id', writeLimiter, idValidation, playlistUpdateValidation, async (req, res) => {
   try {
     const success = await storage.updatePlaylist(req.params.id, req.body);
     if (success) {
@@ -315,12 +387,12 @@ app.put('/api/playlists/:id', async (req, res) => {
       res.status(404).json({ error: 'Playlist not found' });
     }
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: sanitizeError(error) });
   }
 });
 
 // Delete playlist
-app.delete('/api/playlists/:id', async (req, res) => {
+app.delete('/api/playlists/:id', writeLimiter, idValidation, async (req, res) => {
   try {
     const success = await storage.deletePlaylist(req.params.id);
     if (success) {
@@ -329,31 +401,31 @@ app.delete('/api/playlists/:id', async (req, res) => {
       res.status(404).json({ error: 'Playlist not found' });
     }
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: sanitizeError(error) });
   }
 });
 
 // Play history
 
 // Record play
-app.post('/api/play/:id', async (req, res) => {
+app.post('/api/play/:id', idValidation, playHistoryValidation, async (req, res) => {
   try {
     const { durationPlayed } = req.body;
     await storage.addPlayHistory(req.params.id, durationPlayed);
     res.json({ message: 'Play recorded' });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: sanitizeError(error) });
   }
 });
 
 // Get play history
-app.get('/api/history', async (req, res) => {
+app.get('/api/history', historyLimitValidation, async (req, res) => {
   try {
     const limit = parseInt(req.query.limit) || 100;
     const history = await storage.getPlayHistory(limit);
     res.json(history);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: sanitizeError(error) });
   }
 });
 
@@ -363,18 +435,18 @@ app.get('/api/stats', async (req, res) => {
     const stats = await storage.getStats();
     res.json(stats);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: sanitizeError(error) });
   }
 });
 
 // Scan library
-app.post('/api/scan', async (req, res) => {
+app.post('/api/scan', scanLimiter, async (req, res) => {
   try {
     const scanner = new MusicScanner();
     const result = await scanner.scan();
     res.json(result);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: sanitizeError(error) });
   }
 });
 
