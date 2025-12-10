@@ -10,7 +10,8 @@ import {
   listPlaylists,
   createPlaylist,
   getStats,
-  scanLibrary as scanLibraryAPI
+  scanLibrary as scanLibraryAPI,
+  clearCache
 } from './js/API.js';
 import { 
   currentSongs, 
@@ -503,6 +504,10 @@ async function scanLibrary() {
   
   try {
     const result = await scanLibraryAPI();
+    
+    // Clear cache after scan
+    clearCache();
+    
     alert(`Scan complete!\nAdded: ${result.added}\nUpdated: ${result.updated}\nTotal: ${result.total}`);
     
     // Reload the page to refresh all data

@@ -7,6 +7,62 @@ const API_URL = 'https://ominous-space-guide-g95r5vgg75rcwx64-3000.app.github.de
 export { API_URL };
 
 // ============================================
+// Cache Configuration
+// ============================================
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+const cache = new Map();
+
+function getCacheKey(endpoint) {
+  return endpoint;
+}
+
+function getFromCache(key) {
+  const cached = cache.get(key);
+  if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+    return cached.data;
+  }
+  cache.delete(key);
+  return null;
+}
+
+function setCache(key, data) {
+  cache.set(key, {
+    data,
+    timestamp: Date.now()
+  });
+}
+
+function clearCache() {
+  cache.clear();
+}
+
+async function fetchWithCache(url, options = {}) {
+  const cacheKey = getCacheKey(url);
+  
+  // Check cache for GET requests only
+  if (!options.method || options.method === 'GET') {
+    const cached = getFromCache(cacheKey);
+    if (cached) {
+      return cached;
+    }
+  }
+  
+  const response = await fetch(url, options);
+  const data = await response.json();
+  
+  if (!response.ok) {
+    throw new Error(data.message || 'API request failed');
+  }
+  
+  // Cache successful GET responses
+  if (!options.method || options.method === 'GET') {
+    setCache(cacheKey, data);
+  }
+  
+  return data;
+}
+
+// ============================================
 // Search APIs
 // ============================================
 
@@ -47,14 +103,7 @@ async function advancedSearch({ title, artist, album, genre, year, minDuration, 
 // ============================================
 
 async function fetchAllSongs() {
-    const response = await fetch(`${API_URL}/songs`);
-    const data = await response.json();
-
-    if(!response.ok) {
-        throw new Error(data.message || 'Error fetching songs');
-    }
-
-    return data;
+    return await fetchWithCache(`${API_URL}/songs`);
 }
 
 function songCoverUrl(songId) {
@@ -85,28 +134,12 @@ async function recordPlay(songId) {
 // ============================================
 
 async function listAlbums() {
-    const response = await fetch(`${API_URL}/albums`);
-    const data = await response.json();
-
-    if(!response.ok) {
-        throw new Error(data.message || 'Error fetching albums');
-    }
-
-    return data;
+    return await fetchWithCache(`${API_URL}/albums`);
 }
 
 async function getAlbumDetail(artist, album) {
-    const response = await fetch(`${API_URL}/albums/${encodeURIComponent(artist)}/${encodeURIComponent(album)}`);
-    const data = await response.json();
-    
-    if(!response.ok) {
-        throw new Error(data.message || 'Error fetching album detail');
-    }
-    
-    return data;
-}
-
-function albumCoverUrl(songId) {
+    return await fetchWithCache(`${API_URL}/albums/${encodeURIComponent(artist)}/${encodeURIComponent(album)}`);
+}function albumCoverUrl(songId) {
     return `${API_URL}/cover/${songId}`;
 }
 
@@ -115,32 +148,14 @@ function albumCoverUrl(songId) {
 // ============================================
 
 async function listArtists() {
-    const response = await fetch(`${API_URL}/artists`);
-    const data = await response.json();
-    
-    if(!response.ok) {
-        throw new Error(data.message || 'Error fetching artists');
-    }
-    
-    return data;
-}
-
-// ============================================
+    return await fetchWithCache(`${API_URL}/artists`);
+}// ============================================
 // Playlists APIs
 // ============================================
 
 async function listPlaylists() {
-    const response = await fetch(`${API_URL}/playlists`);
-    const data = await response.json();
-    
-    if(!response.ok) {
-        throw new Error(data.message || 'Error fetching playlists');
-    }
-    
-    return data;
-}
-
-async function createPlaylist(name, description, songs = []) {
+    return await fetchWithCache(`${API_URL}/playlists`);
+}async function createPlaylist(name, description, songs = []) {
     const response = await fetch(`${API_URL}/playlists`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -160,17 +175,8 @@ async function createPlaylist(name, description, songs = []) {
 // ============================================
 
 async function getStats() {
-    const response = await fetch(`${API_URL}/stats`);
-    const data = await response.json();
-    
-    if(!response.ok) {
-        throw new Error(data.message || 'Error fetching stats');
-    }
-    
-    return data;
-}
-
-// ============================================
+    return await fetchWithCache(`${API_URL}/stats`);
+}// ============================================
 // Library Management APIs
 // ============================================
 
@@ -203,5 +209,6 @@ export {
     listPlaylists,
     createPlaylist,
     getStats,
-    scanLibrary
+    scanLibrary,
+    clearCache
 };
