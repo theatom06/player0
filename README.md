@@ -1,32 +1,78 @@
-# Project 0 - Music Player Server
+# Player 0
 
-A full-featured music server with advanced library management, playback, and statistics.
+A modern, full-featured music player with advanced library management, smooth animations, and comprehensive keyboard shortcuts.
 
 ## Features
 
-- 🎵 Automatic music library scanning with ID3 tag extraction
-- 🔍 Advanced search (by title, artist, album, genre, year)
-- 📊 Listening statistics and analytics
-- 📝 Playlist creation and management
-- 💿 Album browsing and playback with cover art
-- 🎧 Now playing sidebar with queue management
-- 🎼 Audio streaming over HTTP
-- 🖼️ Album artwork display and fallback icons
-- ⏯️ Full playback controls (play, pause, skip, seek)
+### 🎵 Core Playback
+- Automatic music library scanning with ID3 tag extraction
+- Audio streaming over HTTP with range request support
+- Full playback controls (play, pause, skip, seek, volume)
+- Now playing sidebar with queue management
+- Mini player with real-time progress indicator
+- Album artwork display and extraction
+
+### 🎨 Modern UI/UX
+- **Smooth Animations**: Hardware-accelerated transitions throughout
+  - Animated search bar expansion on focus
+  - Card hover effects with lift and scale
+  - Slide transitions for sidebar and mini player
+  - Modal fade-in animations
+  - Album cover zoom effects
+- **Responsive Design**: Clean, modern dark theme interface
+- **Keyboard Shortcuts**: Complete keyboard navigation system
+  - `Space` - Play/Pause
+  - `→` / `←` - Next/Previous Track
+  - `↑` / `↓` - Volume Up/Down
+  - `Ctrl/⌘ K` - Focus Search
+  - `Ctrl/⌘ P` - Show Shortcuts
+  - `Esc` - Close Modal
+
+### 🔍 Search & Discovery
+- Advanced search (by title, artist, album, genre, year)
+- Real-time search with animated expansion
+- Fuzzy filtering across multiple fields
+- Recently played with time ago display
+
+### 📊 Statistics & Analytics
+- Comprehensive listening statistics
+- Most played songs with play counts
+- Recently played tracks with timestamps
+- Clickable stats - play any song from statistics view
+- Total plays, duration, and library metrics
+
+### 📝 Organization
+- Playlist creation and management
+- Album browsing with cover art
+- Artist library organization
+- Genre classification
+
+### 🔒 Security
+- Input validation on all endpoints
+- Path traversal protection
+- Sanitized user inputs
+- Secure file serving with absolute path checks
+
+## Recent Updates (December 10, 2025)
+
+See [CHANGELOG.md](./CHANGELOG.md) for detailed changes including:
+- Complete UI/UX overhaul with smooth animations
+- Comprehensive keyboard shortcuts system
+- Enhanced statistics with recently played
+- Backend security improvements
+- Mini player with progress indicator
+- Fixed content layout issues
 
 ## Suggested Future Features
 
 ### 🔥 High Priority / Quick Wins
 - 🔀 **Shuffle & Repeat Modes** - Essential playback features
-- ⌨️ **Keyboard Shortcuts** - Space to play/pause, arrow keys for skip
 - 🎯 **Queue Management** - Add to queue, clear queue, save queue
-- 📌 **Recently Played** - Quick access to recent songs
 - 🔊 **Remember Volume** - Save volume level in localStorage
 - 🎨 **Dark/Light Theme Toggle** - User preference themes
 - 🔍 **Search History** - Remember recent searches
 - ⭐ **Favorite/Like Songs** - Quick favorite button on each song
 - 📱 **Mobile Responsive Design** - Better mobile experience
-- 🎵 **Next Up Queue Display** - See what's coming next
 
 ### Playback & Audio
 - 🔀 Shuffle mode with smart shuffle algorithm

@@ -1,0 +1,218 @@
+/* Header & Search */
+
+.main-content {
+  background: var(--bg-medium);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 24px;
+  background: var(--bg-dark);
+  border-bottom: 1px solid var(--border);
+}
+
+.search-bar {
+  display: flex;
+  gap: 8px;
+  flex: 0 1 400px;
+  max-width: 800px;
+  transition: flex 1s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.search-bar:focus-within {
+  flex: 1 1 auto;
+}
+
+.search-bar input {
+  flex: 1;
+  padding: 12px 16px;
+  background: var(--bg-light);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  color: var(--text-primary);
+  font-size: 14px;
+}
+
+.search-bar input:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+.search-button, .icon-button {
+  padding: 8px 16px;
+  background: var(--bg-light);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  color: var(--text-primary);
+  cursor: pointer;
+  font-size: 16px;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.icon-button.active {
+  background: var(--primary);
+  border-color: var(--primary);
+}
+
+.icon-button.active svg {
+  stroke: var(--bg-dark);
+}
+
+.search-button:hover, .icon-button:hover {
+  background: var(--hover);
+}
+
+.icon-button.active:hover {
+  background: #1ea34d;
+}
+
+/* Advanced Search */
+.advanced-search {
+  padding: 16px 24px;
+  background: var(--bg-light);
+  border-bottom: 1px solid var(--border);
+}
+
+.advanced-search h3 {
+  margin-bottom: 12px;
+  font-size: 16px;
+}
+
+.search-filters {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.search-filters input {
+  padding: 8px 12px;
+  background: var(--bg-dark);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text-primary);
+  font-size: 14px;
+  min-width: 150px;
+}
+
+.search-filters button {
+  padding: 8px 16px;
+  background: var(--primary);
+  border: none;
+  border-radius: 4px;
+  color: white;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+.search-filters button:hover {
+  background: var(--primary-dark);
+}
+
+/* Content Area */
+.content-area {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+  padding-bottom: 100px;
+}
+
+.view {
+  display: block;
+}
+
+.view.hidden {
+  display: none;
+}
+
+.view-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.view-header h2 {
+  font-size: 32px;
+}
+
+.view-controls {
+  display: flex;
+  gap: 12px;
+}
+
+.btn-primary, .btn-secondary {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 24px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-primary {
+  background: var(--primary);
+  color: white;
+}
+
+.btn-primary:hover {
+  background: var(--primary-dark);
+  transform: scale(1.05);
+}
+
+.btn-secondary {
+  background: transparent;
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+}
+
+.btn-secondary:hover {
+  background: var(--hover);
+}
+
+/* Empty States */
+.empty-state {
+  text-align: center;
+  padding: 80px 24px !important;
+  border: none !important;
+}
+
+.empty-state-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 24px;
+  text-align: center;
+  color: var(--text-secondary);
+  min-height: 300px;
+}
+
+.empty-state-content svg {
+  opacity: 0.3;
+  margin-bottom: 24px;
+}
+
+.empty-state-content h3 {
+  font-size: 24px;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+}
+
+.empty-state-content p {
+  font-size: 16px;
+  color: var(--text-secondary);
+}

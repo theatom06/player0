@@ -1,5 +1,5 @@
 {
-  "name": "project0",
+  "name": "player-0",
   "version": "1.0.0",
   "description": "Music player server with JSON-based metadata storage",
   "main": "server.js",

@@ -192,8 +192,17 @@ class Storage {
       .sort((a, b) => (b.playCount || 0) - (a.playCount || 0))
       .slice(0, 10);
     
-    // Recently played
-    const recentlyPlayed = history.slice(-10).reverse();
+    // Recently played - enrich with song data
+    const recentPlays = history.slice(-10).reverse();
+    const recentlyPlayed = recentPlays.map(play => {
+      const song = songs.find(s => s.id === play.songId);
+      return {
+        ...play,
+        title: song?.title || 'Unknown',
+        artist: song?.artist || 'Unknown Artist',
+        album: song?.album || 'Unknown Album'
+      };
+    }).filter(play => play.title !== 'Unknown');
     
     return {
       totalSongs,

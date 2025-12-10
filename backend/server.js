@@ -38,6 +38,11 @@ app.get('/api/songs', async (req, res) => {
 // Get song by ID
 app.get('/api/songs/:id', async (req, res) => {
   try {
+    // Validate ID format (alphanumeric and hyphens only)
+    if (!/^[a-zA-Z0-9-]+$/.test(req.params.id)) {
+      return res.status(400).json({ error: 'Invalid song ID format' });
+    }
+    
     const song = await storage.getSongById(req.params.id);
     if (song) {
       res.json(song);
@@ -192,6 +197,11 @@ app.get('/api/artists', async (req, res) => {
 // Stream audio file
 app.get('/api/stream/:id', async (req, res) => {
   try {
+    // Validate ID format
+    if (!/^[a-zA-Z0-9-]+$/.test(req.params.id)) {
+      return res.status(400).json({ error: 'Invalid song ID format' });
+    }
+    
     const song = await storage.getSongById(req.params.id);
     
     if (!song || !song.filePath) {
@@ -200,7 +210,8 @@ app.get('/api/stream/:id', async (req, res) => {
     
     const filePath = song.filePath;
     
-    if (!fs.existsSync(filePath)) {
+    // Ensure file path is absolute and exists
+    if (!path.isAbsolute(filePath) || !fs.existsSync(filePath)) {
       return res.status(404).json({ error: 'File not found' });
     }
     
@@ -238,6 +249,11 @@ app.get('/api/stream/:id', async (req, res) => {
 // Get album cover art
 app.get('/api/cover/:id', async (req, res) => {
   try {
+    // Validate ID format
+    if (!/^[a-zA-Z0-9-]+$/.test(req.params.id)) {
+      return res.status(400).json({ error: 'Invalid song ID format' });
+    }
+    
     const song = await storage.getSongById(req.params.id);
     
     if (!song || !song.filePath) {
@@ -271,10 +287,25 @@ app.get('/api/cover/:id', async (req, res) => {
 // Playlists
 
 // Get all playlists
-app.get('/api/playlists', async (req, res) => {
+app.post('/api/playlists', async (req, res) => {
   try {
-    const playlists = await storage.getPlaylists();
-    res.json(playlists);
+    const { name, description, songIds } = req.body;
+    
+    // Validate inputs
+    if (!name || typeof name !== 'string' || name.length > 200) {
+      return res.status(400).json({ error: 'Invalid playlist name' });
+    }
+    
+    if (description && (typeof description !== 'string' || description.length > 1000)) {
+      return res.status(400).json({ error: 'Invalid playlist description' });
+    }
+    
+    if (!Array.isArray(songIds)) {
+      return res.status(400).json({ error: 'Invalid song IDs' });
+    }
+    
+    const playlist = await storage.createPlaylist({ name, description, songIds });
+    res.json(playlist);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -338,7 +369,18 @@ app.delete('/api/playlists/:id', async (req, res) => {
 // Record play
 app.post('/api/play/:id', async (req, res) => {
   try {
+    // Validate ID format
+    if (!/^[a-zA-Z0-9-]+$/.test(req.params.id)) {
+      return res.status(400).json({ error: 'Invalid song ID format' });
+    }
+    
     const { durationPlayed } = req.body;
+    
+    // Validate duration
+    if (durationPlayed !== undefined && (typeof durationPlayed !== 'number' || durationPlayed < 0)) {
+      return res.status(400).json({ error: 'Invalid duration' });
+    }
+    
     await storage.addPlayHistory(req.params.id, durationPlayed);
     res.json({ message: 'Play recorded' });
   } catch (error) {
@@ -388,7 +430,7 @@ const PORT = configData.port || 3000;
 const HOST = configData.host || '0.0.0.0';
 
 app.listen(PORT, HOST, () => {
-  console.log(`🎵 Project 0 Music Server running on http://${HOST}:${PORT}`);
+  console.log(`🎵 Player 0 Server running on http://${HOST}:${PORT}`);
   console.log(`📁 Data directory: ${configData.dataDirectory}`);
   console.log(`🎶 Music directories: ${configData.musicDirectories.join(', ')}`);
   console.log(`\n💡 Run 'npm run scan' to scan your music library`);

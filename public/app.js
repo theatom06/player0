@@ -1,20 +1,49 @@
-// API Base URL
-const API_URL = 'https://legendary-chainsaw-r9r6r5jjrr4fwq6p-3000.app.github.dev/api';
-
-// State
-let allSongs = [];
-let currentSongs = [];
-let queue = [];
-let currentIndex = -1;
-let isPlaying = false;
+// Main Application Entry Point
+import { debounce } from './js/utils.js';
+import { 
+  simpleSearch,
+  advancedSearch as AdvancedSearchAPI,
+  fetchAllSongs,
+  listAlbums,
+  getAlbumDetail,
+  listArtists,
+  listPlaylists,
+  createPlaylist,
+  getStats,
+  scanLibrary as scanLibraryAPI
+} from './js/API.js';
+import { 
+  currentSongs, 
+  setCurrentSongs, 
+  setQueue 
+} from './js/state.js';
+import { 
+  initPlayer, 
+  playSong, 
+  togglePlayPause, 
+  playNext, 
+  playPrevious, 
+  seek, 
+  setVolume 
+} from './js/player.js';
+import { 
+  renderSongs, 
+  renderAlbums, 
+  renderAlbumDetail, 
+  renderArtists, 
+  renderPlaylists, 
+  renderStats 
+} from './js/ui.js';
 
 // DOM Elements
-const audioPlayer = document.getElementById('audioPlayer');
 const searchInput = document.getElementById('searchInput');
-const advancedSearch = document.getElementById('advancedSearch');
+const advancedSearchEl = document.getElementById('advancedSearch');
 const advancedSearchToggle = document.getElementById('advancedSearchToggle');
 const nowPlayingSidebar = document.getElementById('nowPlayingSidebar');
 const miniPlayer = document.getElementById('miniPlayer');
+
+// Store for album songs
+let currentAlbumSongs = [];
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
@@ -24,12 +53,36 @@ document.addEventListener('DOMContentLoaded', () => {
   setupSidebar();
   setupModal();
   loadSongs();
+  
+  // Hide now playing sidebar initially
+  nowPlayingSidebar.style.display = 'none';
+  miniPlayer.style.display = 'none';
+  document.querySelector('.app-container').classList.add('sidebar-closed');
 });
 
 function setupModal() {
   document.getElementById('closePlaylistModal').onclick = closePlaylistModal;
   document.getElementById('cancelPlaylist').onclick = closePlaylistModal;
   document.getElementById('savePlaylist').onclick = savePlaylist;
+  
+  // Keyboard shortcuts modal
+  const shortcutsBtn = document.getElementById('keyboardShortcutsBtn');
+  const shortcutsModal = document.getElementById('keyboardShortcutsModal');
+  const closeShortcutsBtn = document.getElementById('closeShortcutsModal');
+  
+  shortcutsBtn.onclick = () => {
+    shortcutsModal.style.display = 'flex';
+  };
+  
+  closeShortcutsBtn.onclick = () => {
+    shortcutsModal.style.display = 'none';
+  };
+  
+  shortcutsModal.onclick = (e) => {
+    if (e.target.id === 'keyboardShortcutsModal') {
+      shortcutsModal.style.display = 'none';
+    }
+  };
   
   // Close modal on outside click
   document.getElementById('playlistModal').onclick = (e) => {
@@ -102,39 +155,29 @@ function setupSearch() {
   searchButton.addEventListener('click', performSearch);
   
   advancedSearchToggle.addEventListener('click', () => {
-    advancedSearch.style.display = advancedSearch.style.display === 'none' ? 'block' : 'none';
+    const isVisible = advancedSearchEl.style.display === 'block';
+    advancedSearchEl.style.display = isVisible ? 'none' : 'block';
+    advancedSearchToggle.classList.toggle('active', !isVisible);
   });
   
   document.getElementById('applyFilters').addEventListener('click', applyAdvancedSearch);
   document.getElementById('clearFilters').addEventListener('click', clearFilters);
 }
 
-function debounce(func, wait) {
-  let timeout;
-  return function executedFunction(...args) {
-    const later = () => {
-      clearTimeout(timeout);
-      func(...args);
-    };
-    clearTimeout(timeout);
-    timeout = setTimeout(later, wait);
-  };
-}
-
 async function performSearch() {
   const query = searchInput.value.trim();
   
   if (!query) {
-    currentSongs = allSongs;
-    renderSongs(currentSongs);
+    const songs = await fetchAllSongs();
+    setCurrentSongs(songs);
+    renderSongs(songs, playSongFromList);
     return;
   }
   
   try {
-    const response = await fetch(`${API_URL}/search?q=${encodeURIComponent(query)}`);
-    const songs = await response.json();
-    currentSongs = songs;
-    renderSongs(currentSongs);
+    const songs = await simpleSearch(query);
+    setCurrentSongs(songs);
+    renderSongs(songs, playSongFromList);
   } catch (error) {
     console.error('Search error:', error);
   }
@@ -146,293 +189,106 @@ async function applyAdvancedSearch() {
   const genre = document.getElementById('filterGenre').value;
   const year = document.getElementById('filterYear').value;
   
-  const params = new URLSearchParams();
-  if (artist) params.append('artist', artist);
-  if (album) params.append('album', album);
-  if (genre) params.append('genre', genre);
-  if (year) params.append('year', year);
-  
   try {
-    const response = await fetch(`${API_URL}/search?${params}`);
-    const songs = await response.json();
-    currentSongs = songs;
-    renderSongs(currentSongs);
+    const songs = await AdvancedSearchAPI({
+      artist,
+      album,
+      genre,
+      year
+    });
+
+    setCurrentSongs(songs);
+    renderSongs(songs, playSongFromList);
   } catch (error) {
     console.error('Advanced search error:', error);
   }
 }
 
-function clearFilters() {
+async function clearFilters() {
   document.getElementById('filterArtist').value = '';
   document.getElementById('filterAlbum').value = '';
   document.getElementById('filterGenre').value = '';
   document.getElementById('filterYear').value = '';
   searchInput.value = '';
-  currentSongs = allSongs;
-  renderSongs(currentSongs);
+  
+  const songs = await fetchAllSongs();
+  setCurrentSongs(songs);
+  renderSongs(songs, playSongFromList);
 }
 
 // Load Songs
 async function loadSongs() {
   try {
-    const response = await fetch(`${API_URL}/songs`);
-    allSongs = await response.json();
-    currentSongs = allSongs;
-    renderSongs(currentSongs);
+    const songs = await fetchAllSongs();
+    setCurrentSongs(songs);
+    renderSongs(songs, playSongFromList);
+    
+    // Setup play all and shuffle buttons
+    document.getElementById('playAll').onclick = () => playAll();
+    document.getElementById('shuffleAll').onclick = () => shuffleAll();
   } catch (error) {
     console.error('Error loading songs:', error);
   }
 }
 
-function renderSongs(songs) {
-  const tbody = document.getElementById('songTableBody');
-  tbody.innerHTML = '';
-  
-  if (songs.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="7" class="empty-state">
-      <div class="empty-state-content">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="64" height="64">
-          <path d="M9 18V5l12-2v13M9 18l-5 1V6l5-1M9 18l5-1m0-13V6"/>
-        </svg>
-        <h3>No Songs Found</h3>
-        <p>Click "Scan Library" to add your music</p>
-      </div>
-    </td></tr>`;
-    return;
-  }
-  
-  songs.forEach((song, index) => {
-    const tr = document.createElement('tr');
-    const coverUrl = `${API_URL}/cover/${song.id}`;
-    const albumTitle = song.album || 'Unknown Album';
-    const truncatedAlbum = albumTitle.length > 30 ? albumTitle.substring(0, 30) + '...' : albumTitle;
-    tr.innerHTML = `
-      <td class="col-play">
-        <button class="play-button" onclick="playSongFromList(${index})">
-          <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
-            <path d="M8 5v14l11-7z"/>
-          </svg>
-        </button>
-      </td>
-      <td class="col-cover">
-        <img class="song-cover" src="${coverUrl}" alt="" onerror="this.style.display='none'" />
-      </td>
-      <td class="col-title">${escapeHtml(song.title || 'Unknown')}</td>
-      <td class="col-artist">${escapeHtml(song.artist || 'Unknown Artist')}</td>
-      <td class="col-album" title="${escapeHtml(albumTitle)}">${escapeHtml(truncatedAlbum)}</td>
-      <td class="col-duration">${formatDuration(song.duration)}</td>
-      <td class="col-plays">${song.playCount || 0}</td>
-    `;
-    tr.addEventListener('dblclick', () => playSongFromList(index));
-    tbody.appendChild(tr);
-  });
-  
-  // Setup play all and shuffle buttons
-  document.getElementById('playAll').onclick = () => playAll();
-  document.getElementById('shuffleAll').onclick = () => shuffleAll();
-}
-
 // Albums
 async function loadAlbums() {
   try {
-    const response = await fetch(`${API_URL}/albums`);
-    const albums = await response.json();
-    renderAlbums(albums);
+    const albums = await listAlbums();
+    renderAlbums(albums, loadAlbumDetail);
   } catch (error) {
     console.error('Error loading albums:', error);
   }
 }
 
-function renderAlbums(albums) {
-  const grid = document.getElementById('albumGrid');
-  grid.innerHTML = '';
-  
-  if (albums.length === 0) {
-    grid.innerHTML = `<div class="empty-state-content">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="64" height="64">
-        <circle cx="12" cy="12" r="10"/>
-        <circle cx="12" cy="12" r="3"/>
-      </svg>
-      <h3>No Albums Found</h3>
-      <p>Your albums will appear here once you scan your library</p>
-    </div>`;
-    return;
-  }
-  
-  albums.forEach(album => {
-    const card = document.createElement('div');
-    card.className = 'album-card';
-    const coverUrl = album.songs && album.songs[0] ? `${API_URL}/cover/${album.songs[0].id}` : '';
-    const albumTitle = album.album || 'Unknown Album';
-    const truncatedTitle = albumTitle.length > 25 ? albumTitle.substring(0, 25) + '...' : albumTitle;
-    card.innerHTML = `
-      <div class="album-cover-wrapper">
-        <img class="album-artwork" src="${coverUrl}" alt="${escapeHtml(albumTitle)}" onerror="this.style.display='none';" />
-        <div class="album-placeholder">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="48" height="48">
-            <circle cx="12" cy="12" r="10"/>
-            <circle cx="12" cy="12" r="3"/>
-          </svg>
-        </div>
-      </div>
-      <h3 title="${escapeHtml(albumTitle)}">${escapeHtml(truncatedTitle)}</h3>
-      <p>${escapeHtml(album.artist || 'Unknown Artist')}</p>
-      <p style="font-size: 12px; margin-top: 4px;">${album.songCount} songs</p>
-    `;
-    card.addEventListener('click', () => loadAlbumDetail(album.artist, album.album));
-    grid.appendChild(card);
-  });
-}
-
 async function loadAlbumDetail(artist, album) {
   try {
-    const response = await fetch(`${API_URL}/albums/${encodeURIComponent(artist)}/${encodeURIComponent(album)}`);
-    const albumData = await response.json();
-    renderAlbumDetail(albumData);
+    const albumData = await getAlbumDetail(artist, album);
+    
+    // Store album songs
+    currentAlbumSongs = albumData.songs;
+    
+    renderAlbumDetail(albumData, playAlbumSong);
     
     document.getElementById('albumsView').classList.add('hidden');
     document.getElementById('albumDetailView').classList.remove('hidden');
+    
+    // Setup album controls
+    document.getElementById('playAlbum').onclick = () => playAlbumAll();
+    document.getElementById('shuffleAlbum').onclick = () => shuffleAlbum();
+    document.getElementById('backToAlbums').onclick = () => {
+      document.getElementById('albumDetailView').classList.add('hidden');
+      document.getElementById('albumsView').classList.remove('hidden');
+    };
   } catch (error) {
     console.error('Error loading album detail:', error);
   }
 }
 
-function renderAlbumDetail(album) {
-  document.getElementById('albumTitle').textContent = album.album;
-  document.getElementById('albumArtist').textContent = album.artist;
-  document.getElementById('albumMeta').textContent = `${album.year || 'Unknown Year'} • ${album.songs.length} songs • ${formatDuration(album.duration)}`;
-  
-  // Set album artwork
-  const albumArtwork = document.getElementById('albumArtwork');
-  albumArtwork.style.display = 'block';
-  if (album.songs && album.songs[0]) {
-    albumArtwork.onerror = () => {
-      albumArtwork.style.display = 'none';
-    };
-    albumArtwork.src = `${API_URL}/cover/${album.songs[0].id}`;
-  } else {
-    albumArtwork.style.display = 'none';
-  }
-  
-  const tbody = document.getElementById('albumSongTableBody');
-  tbody.innerHTML = '';
-  
-  album.songs.forEach((song, index) => {
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td class="col-track">${song.trackNumber || '-'}</td>
-      <td class="col-play">
-        <button class="play-button" onclick="playAlbumSong(${index})">
-          <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
-            <path d="M8 5v14l11-7z"/>
-          </svg>
-        </button>
-      </td>
-      <td class="col-title">${escapeHtml(song.title)}</td>
-      <td class="col-duration">${formatDuration(song.duration)}</td>
-    `;
-    tr.addEventListener('dblclick', () => playAlbumSong(index));
-    tbody.appendChild(tr);
-  });
-  
-  // Store album songs for playback
-  window.currentAlbumSongs = album.songs;
-  
-  document.getElementById('playAlbum').onclick = () => playAlbumAll();
-  document.getElementById('shuffleAlbum').onclick = () => shuffleAlbum();
-  document.getElementById('backToAlbums').onclick = () => {
-    document.getElementById('albumDetailView').classList.add('hidden');
-    document.getElementById('albumsView').classList.remove('hidden');
-  };
-}
-
 // Artists
 async function loadArtists() {
   try {
-    const response = await fetch(`${API_URL}/artists`);
-    const artists = await response.json();
-    renderArtists(artists);
+    const artists = await listArtists();
+    renderArtists(artists, (artistName) => {
+      searchInput.value = artistName;
+      performSearch();
+      switchView('library');
+    });
   } catch (error) {
     console.error('Error loading artists:', error);
   }
 }
 
-function renderArtists(artists) {
-  const list = document.getElementById('artistList');
-  list.innerHTML = '';
-  
-  if (artists.length === 0) {
-    list.innerHTML = `<div class="empty-state-content">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="64" height="64">
-        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-        <circle cx="12" cy="7" r="4"/>
-      </svg>
-      <h3>No Artists Found</h3>
-      <p>Artists will appear here after scanning your music</p>
-    </div>`;
-    return;
-  }
-  
-  artists.forEach(artist => {
-    const item = document.createElement('div');
-    item.className = 'artist-item';
-    item.innerHTML = `
-      <div>
-        <div class="artist-name">${escapeHtml(artist.name)}</div>
-        <div class="artist-meta">${artist.songCount} songs • ${artist.albumCount} albums</div>
-      </div>
-    `;
-    item.addEventListener('click', () => {
-      searchInput.value = artist.name;
-      performSearch();
-      switchView('library');
-    });
-    list.appendChild(item);
-  });
-}
-
 // Playlists
 async function loadPlaylists() {
   try {
-    const response = await fetch(`${API_URL}/playlists`);
-    const playlists = await response.json();
+    const playlists = await listPlaylists();
     renderPlaylists(playlists);
+    
+    document.getElementById('createPlaylist').onclick = openPlaylistModal;
   } catch (error) {
     console.error('Error loading playlists:', error);
   }
-}
-
-function renderPlaylists(playlists) {
-  const grid = document.getElementById('playlistGrid');
-  grid.innerHTML = '';
-  
-  if (playlists.length === 0) {
-    grid.innerHTML = `<div class="empty-state-content">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="64" height="64">
-        <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>
-      </svg>
-      <h3>No Playlists Yet</h3>
-      <p>Create your first playlist to organize your music</p>
-    </div>`;
-    return;
-  }
-  
-  playlists.forEach(playlist => {
-    const card = document.createElement('div');
-    card.className = 'playlist-card';
-    card.innerHTML = `
-      <div class="playlist-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="48" height="48">
-          <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>
-        </svg>
-      </div>
-      <h3>${escapeHtml(playlist.name)}</h3>
-      <p>${playlist.songCount || 0} songs</p>
-    `;
-    grid.appendChild(card);
-  });
-  
-  document.getElementById('createPlaylist').onclick = openPlaylistModal;
 }
 
 function openPlaylistModal() {
@@ -456,11 +312,7 @@ async function savePlaylist() {
   }
   
   try {
-    await fetch(`${API_URL}/playlists`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, description, songs: [] })
-    });
+    await createPlaylist(name, description, []);
     closePlaylistModal();
     loadPlaylists();
   } catch (error) {
@@ -472,112 +324,109 @@ async function savePlaylist() {
 // Statistics
 async function loadStats() {
   try {
-    const response = await fetch(`${API_URL}/stats`);
-    const stats = await response.json();
+    const stats = await getStats();
     renderStats(stats);
+    
+    // Add click handlers for song items
+    document.querySelectorAll('.song-list-item').forEach(item => {
+      item.addEventListener('click', async () => {
+        const songId = item.dataset.songId;
+        if (songId) {
+          const songs = await fetchAllSongs();
+          const song = songs.find(s => s.id === songId);
+          if (song) {
+            setQueue(songs);
+            const index = songs.findIndex(s => s.id === songId);
+            playSongFromList(index);
+          }
+        }
+      });
+    });
   } catch (error) {
     console.error('Error loading stats:', error);
   }
 }
 
-function renderStats(stats) {
-  const grid = document.getElementById('statsGrid');
-  
-  // Check if we have any data
-  const hasData = stats && stats.totalSongs > 0;
-  
-  if (!hasData) {
-    grid.innerHTML = `<div class="empty-state-content" style="grid-column: 1 / -1;">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="64" height="64">
-        <path d="M3 3v18h18"/>
-        <path d="M7 16V9M12 16V6M17 16v-4"/>
-      </svg>
-      <h3>No Statistics Yet</h3>
-      <p>Start playing some music to see your stats</p>
-    </div>`;
-    document.getElementById('mostPlayedList').innerHTML = '<p style="text-align: center; color: var(--text-secondary); padding: 24px;">No plays recorded yet</p>';
-    document.getElementById('recentlyPlayedList').innerHTML = '<p style="text-align: center; color: var(--text-secondary); padding: 24px;">No recent plays</p>';
-    return;
-  }
-  
-  grid.innerHTML = `
-    <div class="stat-card">
-      <div class="stat-value">${stats.totalSongs || 0}</div>
-      <div class="stat-label">Total Songs</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-value">${stats.uniqueArtists || 0}</div>
-      <div class="stat-label">Artists</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-value">${stats.uniqueAlbums || 0}</div>
-      <div class="stat-label">Albums</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-value">${stats.uniqueGenres || 0}</div>
-      <div class="stat-label">Genres</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-value">${formatDuration(stats.totalDuration || 0)}</div>
-      <div class="stat-label">Total Duration</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-value">${stats.totalPlays || 0}</div>
-      <div class="stat-label">Total Plays</div>
-    </div>
-  `;
-  
-  // Most played
-  const mostPlayedList = document.getElementById('mostPlayedList');
-  mostPlayedList.innerHTML = '';
-  if (stats.mostPlayed && stats.mostPlayed.length > 0) {
-    stats.mostPlayed.forEach(song => {
-      const item = document.createElement('div');
-      item.className = 'song-list-item';
-      item.innerHTML = `
-        <div>
-          <div>${escapeHtml(song.title || 'Unknown')}</div>
-          <div style="font-size: 12px; color: var(--text-secondary);">${escapeHtml(song.artist || 'Unknown Artist')}</div>
-        </div>
-        <div style="color: var(--text-secondary);">${song.playCount || 0} plays</div>
-      `;
-      mostPlayedList.appendChild(item);
-    });
-  } else {
-    mostPlayedList.innerHTML = '<p style="text-align: center; color: var(--text-secondary); padding: 24px;">No plays recorded yet</p>';
-  }
-}
-
-// Player
+// Player Setup
 function setupPlayer() {
+  const audioPlayer = document.getElementById('audioPlayer');
   const playPauseButton = document.getElementById('playPauseButton');
   const prevButton = document.getElementById('prevButton');
   const nextButton = document.getElementById('nextButton');
   const progressBar = document.getElementById('progressBar');
   const volumeSlider = document.getElementById('volumeSlider');
   
+  // Initialize player module
+  initPlayer(audioPlayer);
+  
+  // Setup controls
   playPauseButton.addEventListener('click', togglePlayPause);
   prevButton.addEventListener('click', playPrevious);
   nextButton.addEventListener('click', playNext);
   
   progressBar.addEventListener('input', (e) => {
-    const time = (e.target.value / 100) * audioPlayer.duration;
-    audioPlayer.currentTime = time;
+    seek(e.target.value);
   });
   
   volumeSlider.addEventListener('input', (e) => {
-    audioPlayer.volume = e.target.value / 100;
+    setVolume(e.target.value / 100);
   });
   
-  audioPlayer.addEventListener('timeupdate', updateProgress);
-  audioPlayer.addEventListener('ended', playNext);
-  audioPlayer.addEventListener('play', () => {
-    isPlaying = true;
-    updatePlayButton();
-  });
-  audioPlayer.addEventListener('pause', () => {
-    isPlaying = false;
-    updatePlayButton();
+  // Keyboard shortcuts
+  document.addEventListener('keydown', (e) => {
+    // Ignore if typing in input fields
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+      // Allow Ctrl/Cmd + F and Ctrl/Cmd + K
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'f' || e.key === 'k')) {
+        // Handle below
+      } else {
+        return;
+      }
+    }
+    
+    switch(e.key) {
+      case ' ':
+        e.preventDefault();
+        togglePlayPause();
+        break;
+      case 'ArrowRight':
+        e.preventDefault();
+        playNext();
+        break;
+      case 'ArrowLeft':
+        e.preventDefault();
+        playPrevious();
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        const currentVol = audioPlayer.volume;
+        setVolume(Math.min(1, currentVol + 0.1));
+        volumeSlider.value = Math.min(100, parseFloat(volumeSlider.value) + 10);
+        break;
+      case 'ArrowDown':
+        e.preventDefault();
+        const currentVolDown = audioPlayer.volume;
+        setVolume(Math.max(0, currentVolDown - 0.1));
+        volumeSlider.value = Math.max(0, parseFloat(volumeSlider.value) - 10);
+        break;
+      case 'k':
+        if (e.ctrlKey || e.metaKey) {
+          e.preventDefault();
+          searchInput.focus();
+        }
+        break;
+      case 'p':
+        if (e.ctrlKey || e.metaKey) {
+          e.preventDefault();
+          document.getElementById('keyboardShortcutsModal').style.display = 'flex';
+        }
+        break;
+      case 'Escape':
+        // Close any open modals
+        document.getElementById('playlistModal').style.display = 'none';
+        document.getElementById('keyboardShortcutsModal').style.display = 'none';
+        break;
+    }
   });
   
   // Mini player controls
@@ -586,156 +435,62 @@ function setupPlayer() {
   document.getElementById('miniNext').addEventListener('click', playNext);
 }
 
+// Playback Functions
 function playSongFromList(index) {
-  queue = [...currentSongs];
-  currentIndex = index;
-  playSong(queue[currentIndex]);
+  setQueue([...currentSongs], index);
+  playSong(currentSongs[index]);
 }
 
 function playAlbumSong(index) {
-  queue = [...window.currentAlbumSongs];
-  currentIndex = index;
-  playSong(queue[currentIndex]);
+  setQueue([...currentAlbumSongs], index);
+  playSong(currentAlbumSongs[index]);
 }
 
 function playAll() {
-  queue = [...currentSongs];
-  currentIndex = 0;
-  playSong(queue[currentIndex]);
+  setQueue([...currentSongs], 0);
+  playSong(currentSongs[0]);
 }
 
 function shuffleAll() {
-  queue = [...currentSongs].sort(() => Math.random() - 0.5);
-  currentIndex = 0;
-  playSong(queue[currentIndex]);
+  const shuffled = [...currentSongs].sort(() => Math.random() - 0.5);
+  setQueue(shuffled, 0);
+  playSong(shuffled[0]);
 }
 
 function playAlbumAll() {
-  queue = [...window.currentAlbumSongs];
-  currentIndex = 0;
-  playSong(queue[currentIndex]);
+  setQueue([...currentAlbumSongs], 0);
+  playSong(currentAlbumSongs[0]);
 }
 
 function shuffleAlbum() {
-  queue = [...window.currentAlbumSongs].sort(() => Math.random() - 0.5);
-  currentIndex = 0;
-  playSong(queue[currentIndex]);
-}
-
-function playSong(song) {
-  if (!song) return;
-  
-  audioPlayer.src = `${API_URL}/stream/${song.id}`;
-  audioPlayer.play();
-  
-  document.getElementById('npTitle').textContent = song.title || 'Unknown';
-  document.getElementById('npArtist').textContent = song.artist || 'Unknown Artist';
-  document.getElementById('miniTitle').textContent = song.title || 'Unknown';
-  document.getElementById('miniArtist').textContent = song.artist || 'Unknown Artist';
-  
-  // Set album artwork
-  const npArtwork = document.getElementById('npArtwork');
-  npArtwork.onerror = () => {
-    npArtwork.style.display = 'none';
-  };
-  npArtwork.src = `${API_URL}/cover/${song.id}`;
-  npArtwork.style.display = 'block';
-  
-  updateQueue();
-  
-  // Record play
-  recordPlay(song.id);
-}
-
-function togglePlayPause() {
-  if (audioPlayer.paused) {
-    audioPlayer.play();
-  } else {
-    audioPlayer.pause();
-  }
-}
-
-function updatePlayButton() {
-  const playPauseButton = document.getElementById('playPauseButton');
-  const miniPlayPause = document.getElementById('miniPlayPause');
-  
-  if (isPlaying) {
-    playPauseButton.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor" width="32" height="32"><path d="M6 4h4v16H6zM14 4h4v16h-4z"/></svg>';
-    miniPlayPause.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path d="M6 4h4v16H6zM14 4h4v16h-4z"/></svg>';
-  } else {
-    playPauseButton.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor" width="32" height="32"><path d="M8 5v14l11-7z"/></svg>';
-    miniPlayPause.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path d="M8 5v14l11-7z"/></svg>';
-  }
-}
-
-function playPrevious() {
-  if (currentIndex > 0) {
-    currentIndex--;
-    playSong(queue[currentIndex]);
-  }
-}
-
-function playNext() {
-  if (currentIndex < queue.length - 1) {
-    currentIndex++;
-    playSong(queue[currentIndex]);
-  }
-}
-
-function updateProgress() {
-  const progress = (audioPlayer.currentTime / audioPlayer.duration) * 100;
-  document.getElementById('progressBar').value = progress || 0;
-  document.getElementById('currentTime').textContent = formatDuration(audioPlayer.currentTime);
-  document.getElementById('totalTime').textContent = formatDuration(audioPlayer.duration);
-}
-
-function updateQueue() {
-  const queueList = document.getElementById('queueList');
-  queueList.innerHTML = '';
-  
-  if (queue.length === 0) {
-    queueList.innerHTML = '<p class="empty-queue">Queue is empty</p>';
-    return;
-  }
-  
-  queue.forEach((song, index) => {
-    const item = document.createElement('div');
-    item.className = 'queue-item' + (index === currentIndex ? ' active' : '');
-    item.innerHTML = `
-      <div class="queue-title">${escapeHtml(song.title)}</div>
-      <div class="queue-artist">${escapeHtml(song.artist)}</div>
-    `;
-    item.addEventListener('click', () => {
-      currentIndex = index;
-      playSong(queue[currentIndex]);
-    });
-    queueList.appendChild(item);
-  });
-}
-
-async function recordPlay(songId) {
-  try {
-    await fetch(`${API_URL}/play/${songId}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ durationPlayed: 0 })
-    });
-  } catch (error) {
-    console.error('Error recording play:', error);
-  }
+  const shuffled = [...currentAlbumSongs].sort(() => Math.random() - 0.5);
+  setQueue(shuffled, 0);
+  playSong(shuffled[0]);
 }
 
 // Sidebar Toggle
 function setupSidebar() {
   document.getElementById('closeSidebar').addEventListener('click', () => {
-    nowPlayingSidebar.style.display = 'none';
+    nowPlayingSidebar.style.transform = 'translateX(320px)';
     miniPlayer.style.display = 'flex';
+    requestAnimationFrame(() => {
+      miniPlayer.style.transform = 'translateY(0)';
+    });
+    setTimeout(() => {
+      nowPlayingSidebar.style.display = 'none';
+    }, 400);
     document.querySelector('.app-container').classList.add('sidebar-closed');
   });
   
   document.getElementById('expandSidebar').addEventListener('click', () => {
     nowPlayingSidebar.style.display = 'flex';
-    miniPlayer.style.display = 'none';
+    requestAnimationFrame(() => {
+      nowPlayingSidebar.style.transform = 'translateX(0)';
+    });
+    miniPlayer.style.transform = 'translateY(100%)';
+    setTimeout(() => {
+      miniPlayer.style.display = 'none';
+    }, 400);
     document.querySelector('.app-container').classList.remove('sidebar-closed');
   });
 }
@@ -747,33 +502,19 @@ async function scanLibrary() {
   button.innerHTML = '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/></svg><span>Scanning...</span>';
   
   try {
-    const response = await fetch(`${API_URL}/scan`, { method: 'POST' });
-    const result = await response.json();
+    const result = await scanLibraryAPI();
     alert(`Scan complete!\nAdded: ${result.added}\nUpdated: ${result.updated}\nTotal: ${result.total}`);
-    loadSongs();
+    
+    // Reload the page to refresh all data
+    window.location.reload();
   } catch (error) {
     console.error('Scan error:', error);
     alert('Error scanning library');
-  } finally {
     button.disabled = false;
-    button.innerHTML = '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/></svg><span>Scan Library</span>';
+    button.innerHTML = '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg><span>Scan Library</span>';
   }
 }
 
-// Utility Functions
-function formatDuration(seconds) {
-  if (!seconds || isNaN(seconds)) return '0:00';
-  const mins = Math.floor(seconds / 60);
-  const secs = Math.floor(seconds % 60);
-  return `${mins}:${secs.toString().padStart(2, '0')}`;
-}
-
-function escapeHtml(text) {
-  const div = document.createElement('div');
-  div.textContent = text;
-  return div.innerHTML;
-}
-
-// Make functions globally accessible
+// Make functions globally accessible (for backwards compatibility if needed)
 window.playSongFromList = playSongFromList;
 window.playAlbumSong = playAlbumSong;
