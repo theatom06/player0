@@ -30,7 +30,17 @@ const storage = new Storage(configData.dataDirectory);
 // Security Middleware
 // Add helmet for security headers
 app.use(helmet({
-  contentSecurityPolicy: false, // Disabled for now to allow inline scripts in frontend
+  // Configure Content Security Policy to allow external scripts and media
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'"], // Allow inline styles for dynamic UI
+      imgSrc: ["'self'", "data:", "blob:"],
+      mediaSrc: ["'self'", "blob:"],
+      connectSrc: ["'self'"]
+    }
+  },
   crossOriginEmbedderPolicy: false // Disabled to allow audio streaming
 }));
 
