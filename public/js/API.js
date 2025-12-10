@@ -9,7 +9,7 @@ export { API_URL };
 // ============================================
 // Cache Configuration
 // ============================================
-const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+const CACHE_DURATION = 7 * 24 * 60 * 60 * 1000; // 1 week
 const cache = new Map();
 
 function getCacheKey(endpoint) {
