@@ -103,7 +103,8 @@ class Storage {
       id: Date.now().toString(),
       name: playlist.name,
       description: playlist.description || '',
-      songs: [],
+      songIds: playlist.songIds || [],
+      songCount: (playlist.songIds || []).length,
       createdDate: new Date().toISOString(),
       modifiedDate: new Date().toISOString()
     };
@@ -116,11 +117,16 @@ class Storage {
     const playlists = await this.getPlaylists();
     const index = playlists.findIndex(playlist => playlist.id === id);
     if (index !== -1) {
-      playlists[index] = {
+      const updated = {
         ...playlists[index],
         ...updates,
         modifiedDate: new Date().toISOString()
       };
+      // Update songCount if songIds changed
+      if (updates.songIds) {
+        updated.songCount = updates.songIds.length;
+      }
+      playlists[index] = updated;
       return await this.savePlaylists(playlists);
     }
     return false;

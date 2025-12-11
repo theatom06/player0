@@ -257,7 +257,8 @@
 
 .song-list-item {
   display: flex;
-  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
   padding: 12px;
   background: var(--bg-medium);
   border-radius: 4px;
@@ -265,6 +266,32 @@
   transition: background 0.2s;
 }
 
+.song-list-cover {
+  width: 48px;
+  height: 48px;
+  border-radius: 4px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
 .song-list-item:hover {
   background: var(--bg-light);
+}
+
+.expand-button {
+  width: 100%;
+  margin-top: 12px;
+  padding: 8px 16px;
+  background: var(--bg-medium);
+  color: var(--text-primary);
+  border: 1px solid var(--bg-light);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.expand-button:hover {
+  background: var(--bg-light);
+  border-color: var(--accent);
 }

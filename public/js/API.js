@@ -155,16 +155,42 @@ async function listArtists() {
 
 async function listPlaylists() {
     return await fetchWithCache(`${API_URL}/playlists`);
-}async function createPlaylist(name, description, songs = []) {
+}async function createPlaylist(name, description, songIds = []) {
     const response = await fetch(`${API_URL}/playlists`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, description, songs })
+        body: JSON.stringify({ name, description, songIds })
     });
     
     if(!response.ok) {
         const data = await response.json();
         throw new Error(data.message || 'Error creating playlist');
+    }
+    
+    return response.json();
+}
+
+async function getPlaylist(id) {
+    return await fetchWithCache(`${API_URL}/playlists/${id}`);
+}
+
+async function addToPlaylist(playlistId, songId) {
+    const playlist = await getPlaylist(playlistId);
+    const songIds = playlist.songIds || [];
+    
+    if (!songIds.includes(songId)) {
+        songIds.push(songId);
+    }
+    
+    const response = await fetch(`${API_URL}/playlists/${playlistId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ songIds })
+    });
+    
+    if(!response.ok) {
+        const data = await response.json();
+        throw new Error(data.message || 'Error adding to playlist');
     }
     
     return response.json();
@@ -208,6 +234,8 @@ export {
     listArtists,
     listPlaylists,
     createPlaylist,
+    getPlaylist,
+    addToPlaylist,
     getStats,
     scanLibrary,
     clearCache

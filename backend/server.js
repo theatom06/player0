@@ -327,7 +327,14 @@ app.get('/api/cover/:id', async (req, res) => {
 app.get('/api/playlists', async (req, res) => {
   try {
     const playlists = await storage.getPlaylists();
-    res.json(playlists);
+    // Ensure backward compatibility: convert songs to songIds if needed
+    const normalized = playlists.map(p => ({
+      ...p,
+      songIds: p.songIds || p.songs || [],
+      songCount: p.songCount || (p.songIds || p.songs || []).length,
+      songs: undefined // Remove old field
+    }));
+    res.json(normalized);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -373,7 +380,14 @@ app.get('/api/playlists/:id', async (req, res) => {
     
     const playlist = await storage.getPlaylistById(req.params.id);
     if (playlist) {
-      res.json(playlist);
+      // Normalize playlist structure
+      const normalized = {
+        ...playlist,
+        songIds: playlist.songIds || playlist.songs || [],
+        songCount: playlist.songCount || (playlist.songIds || playlist.songs || []).length,
+        songs: undefined
+      };
+      res.json(normalized);
     } else {
       res.status(404).json({ error: 'Playlist not found' });
     }

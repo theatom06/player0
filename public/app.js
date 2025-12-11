@@ -9,6 +9,8 @@ import {
   listArtists,
   listPlaylists,
   createPlaylist,
+  getPlaylist,
+  addToPlaylist,
   getStats,
   scanLibrary as scanLibraryAPI,
   clearCache
@@ -32,7 +34,8 @@ import {
   renderAlbums, 
   renderAlbumDetail, 
   renderArtists, 
-  renderPlaylists, 
+  renderPlaylists,
+  renderPlaylistDetail,
   renderStats 
 } from './js/ui.js';
 
@@ -65,6 +68,16 @@ function setupModal() {
   document.getElementById('closePlaylistModal').onclick = closePlaylistModal;
   document.getElementById('cancelPlaylist').onclick = closePlaylistModal;
   document.getElementById('savePlaylist').onclick = savePlaylist;
+  
+  // Add to Playlist Modal
+  document.getElementById('closeAddToPlaylistModal').onclick = () => {
+    document.getElementById('addToPlaylistModal').style.display = 'none';
+  };
+  
+  document.getElementById('createNewPlaylistFromAdd').onclick = () => {
+    document.getElementById('addToPlaylistModal').style.display = 'none';
+    openPlaylistModal();
+  };
   
   // Keyboard shortcuts modal
   const shortcutsBtn = document.getElementById('keyboardShortcutsBtn');
@@ -107,6 +120,50 @@ function setupNavigation() {
   });
   
   document.getElementById('scanButton').addEventListener('click', scanLibrary);
+  
+  // Add to playlist button delegation
+  document.addEventListener('click', (e) => {
+    if (e.target.closest('.add-to-playlist-btn')) {
+      const btn = e.target.closest('.add-to-playlist-btn');
+      const songId = btn.dataset.songId;
+      if (songId) {
+        window.openAddToPlaylistModal(songId);
+      }
+    }
+    
+    // Remove from playlist button
+    if (e.target.closest('.remove-from-playlist-btn')) {
+      const btn = e.target.closest('.remove-from-playlist-btn');
+      const songId = btn.dataset.songId;
+      if (songId && window.currentPlaylistId) {
+        removeFromPlaylist(window.currentPlaylistId, songId);
+      }
+    }
+  });
+}
+
+async function removeFromPlaylist(playlistId, songId) {
+  try {
+    const playlist = await getPlaylist(playlistId);
+    const songIds = (playlist.songIds || []).filter(id => id !== songId);
+    
+    const API_URL = 'https://ominous-space-guide-g95r5vgg75rcwx64-3000.app.github.dev/api';
+    const response = await fetch(`${API_URL}/playlists/${playlistId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ songIds })
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to remove song');
+    }
+    
+    // Reload playlist detail
+    window.loadPlaylistDetail(playlistId);
+  } catch (error) {
+    console.error('Error removing from playlist:', error);
+    alert('Error removing song from playlist');
+  }
 }
 
 function switchView(viewName) {
@@ -320,6 +377,99 @@ async function savePlaylist() {
     console.error('Error creating playlist:', error);
     alert('Error creating playlist');
   }
+}
+
+window.loadPlaylistDetail = async function(playlistId) {
+  try {
+    const playlist = await getPlaylist(playlistId);
+    const allSongs = await fetchAllSongs();
+    
+    // Get songs in playlist
+    const playlistSongs = (playlist.songIds || []).map(id => 
+      allSongs.find(song => song.id === id)
+    ).filter(song => song !== undefined);
+    
+    // Store current playlist for actions
+    window.currentPlaylistId = playlistId;
+    window.currentPlaylistSongs = playlistSongs;
+    
+    switchView('playlistDetailView');
+    renderPlaylistDetail(playlist, playlistSongs);
+    
+    // Setup back button
+    document.getElementById('backToPlaylists').onclick = () => {
+      switchView('playlistsView');
+      loadPlaylists();
+    };
+    
+    // Setup play all button
+    document.getElementById('playPlaylistAll').onclick = () => {
+      if (playlistSongs.length > 0) {
+        setCurrentSongs(playlistSongs);
+        setQueue(playlistSongs);
+        playSong(0);
+      }
+    };
+  } catch (error) {
+    console.error('Error loading playlist:', error);
+    alert('Error loading playlist');
+  }
+};
+
+window.onPlaySongFromPlaylist = function(songs, index) {
+  setCurrentSongs(songs);
+  setQueue(songs);
+  playSong(index);
+};
+
+let currentSongForPlaylist = null;
+
+window.openAddToPlaylistModal = async function(songId) {
+  currentSongForPlaylist = songId;
+  const modal = document.getElementById('addToPlaylistModal');
+  const listContainer = document.getElementById('playlistSelectionList');
+  
+  try {
+    const playlists = await listPlaylists();
+    listContainer.innerHTML = '';
+    
+    if (playlists.length === 0) {
+      listContainer.innerHTML = '<p style="text-align: center; color: var(--text-secondary); padding: 24px;">No playlists yet. Create one below!</p>';
+    } else {
+      playlists.forEach(playlist => {
+        const item = document.createElement('div');
+        item.className = 'playlist-selection-item';
+        item.innerHTML = `
+          <div>
+            <div style="font-weight: 500;">${escapeHtml(playlist.name)}</div>
+            <div style="font-size: 12px; color: var(--text-secondary);">${playlist.songCount || 0} songs</div>
+          </div>
+        `;
+        item.onclick = async () => {
+          try {
+            await addToPlaylist(playlist.id, songId);
+            modal.style.display = 'none';
+            alert(`Added to ${playlist.name}`);
+          } catch (error) {
+            console.error('Error adding to playlist:', error);
+            alert('Error adding to playlist');
+          }
+        };
+        listContainer.appendChild(item);
+      });
+    }
+    
+    modal.style.display = 'flex';
+  } catch (error) {
+    console.error('Error loading playlists:', error);
+    alert('Error loading playlists');
+  }
+};
+
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
 }
 
 // Statistics

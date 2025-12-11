@@ -90,6 +90,16 @@
   color: var(--text-secondary);
 }
 
+.col-add {
+  width: 50px;
+  text-align: center;
+}
+
+.col-remove {
+  width: 50px;
+  text-align: center;
+}
+
 .play-button {
   background: none;
   border: none;

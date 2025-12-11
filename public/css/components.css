@@ -154,6 +154,63 @@
   text-align: center;
 }
 
+/* Add to Playlist Modal */
+.playlist-selection-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.playlist-selection-item {
+  padding: 12px;
+  background: var(--bg-medium);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.playlist-selection-item:hover {
+  background: var(--bg-light);
+}
+
+.add-to-playlist-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.add-to-playlist-btn:hover {
+  background: var(--bg-light);
+  color: var(--accent);
+}
+
+.remove-from-playlist-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.remove-from-playlist-btn:hover {
+  background: var(--bg-light);
+  color: #ef4444;
+}
+
 /* Scrollbar */
 ::-webkit-scrollbar {
   width: 12px;

@@ -51,6 +51,14 @@ export function renderSongs(songs, onPlaySong) {
       <td class="col-album" title="${escapeHtml(albumTitle)}">${escapeHtml(truncatedAlbum)}</td>
       <td class="col-duration">${formatDuration(song.duration)}</td>
       <td class="col-plays">${song.playCount || 0}</td>
+      <td class="col-add">
+        <button class="add-to-playlist-btn" data-song-id="${song.id}" title="Add to Playlist">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+        </button>
+      </td>
     `;
     
     // Add event listeners
@@ -217,6 +225,7 @@ export function renderPlaylists(playlists) {
   playlists.forEach(playlist => {
     const card = document.createElement('div');
     card.className = 'playlist-card';
+    card.style.cursor = 'pointer';
     card.innerHTML = `
       <div class="playlist-icon">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="48" height="48">
@@ -226,6 +235,12 @@ export function renderPlaylists(playlists) {
       <h3>${escapeHtml(playlist.name)}</h3>
       <p>${playlist.songCount || 0} songs</p>
     `;
+    card.dataset.playlistId = playlist.id;
+    card.onclick = () => {
+      if (window.loadPlaylistDetail) {
+        window.loadPlaylistDetail(playlist.id);
+      }
+    };
     grid.appendChild(card);
   });
 }
@@ -292,7 +307,8 @@ export function renderStats(stats) {
         item.className = 'song-list-item';
         item.style.cursor = 'pointer';
         item.innerHTML = `
-          <div>
+          <img src="${songCoverUrl(song.id)}" alt="Cover" class="song-list-cover" onerror="this.style.display='none'">
+          <div style="flex: 1;">
             <div>${escapeHtml(song.title || 'Unknown')}</div>
             <div style="font-size: 12px; color: var(--text-secondary);">${escapeHtml(song.artist || 'Unknown Artist')}</div>
           </div>
@@ -308,27 +324,54 @@ export function renderStats(stats) {
   
   // Recently played
   const recentlyPlayedList = document.getElementById('recentlyPlayedList');
+  const expandButton = document.getElementById('recentlyPlayedExpand');
   if (recentlyPlayedList) {
     recentlyPlayedList.innerHTML = '';
     if (stats.recentlyPlayed && stats.recentlyPlayed.length > 0) {
-      stats.recentlyPlayed.forEach(play => {
-        const item = document.createElement('div');
-        item.className = 'song-list-item';
-        item.style.cursor = 'pointer';
-        const playDate = new Date(play.playedAt);
-        const timeAgo = getTimeAgo(playDate);
-        item.innerHTML = `
-          <div>
-            <div>${escapeHtml(play.title || 'Unknown')}</div>
-            <div style="font-size: 12px; color: var(--text-secondary);">${escapeHtml(play.artist || 'Unknown Artist')}</div>
-          </div>
-          <div style="color: var(--text-secondary); font-size: 12px;">${timeAgo}</div>
-        `;
-        item.dataset.songId = play.songId;
-        recentlyPlayedList.appendChild(item);
-      });
+      const INITIAL_SHOW = 5;
+      let isExpanded = false;
+      
+      const renderRecentlyPlayed = (showAll = false) => {
+        recentlyPlayedList.innerHTML = '';
+        const itemsToShow = showAll ? stats.recentlyPlayed : stats.recentlyPlayed.slice(0, INITIAL_SHOW);
+        
+        itemsToShow.forEach(play => {
+          const item = document.createElement('div');
+          item.className = 'song-list-item';
+          item.style.cursor = 'pointer';
+          const playDate = new Date(play.playedAt);
+          const timeAgo = getTimeAgo(playDate);
+          item.innerHTML = `
+            <img src="${songCoverUrl(play.songId)}" alt="Cover" class="song-list-cover" onerror="this.style.display='none'">
+            <div style="flex: 1;">
+              <div>${escapeHtml(play.title || 'Unknown')}</div>
+              <div style="font-size: 12px; color: var(--text-secondary);">${escapeHtml(play.artist || 'Unknown Artist')}</div>
+            </div>
+            <div style="color: var(--text-secondary); font-size: 12px;">${timeAgo}</div>
+          `;
+          item.dataset.songId = play.songId;
+          recentlyPlayedList.appendChild(item);
+        });
+      };
+      
+      renderRecentlyPlayed(false);
+      
+      // Show expand button if there are more than INITIAL_SHOW items
+      if (stats.recentlyPlayed.length > INITIAL_SHOW) {
+        expandButton.style.display = 'block';
+        expandButton.textContent = 'Show More';
+        
+        expandButton.onclick = () => {
+          isExpanded = !isExpanded;
+          renderRecentlyPlayed(isExpanded);
+          expandButton.textContent = isExpanded ? 'Show Less' : 'Show More';
+        };
+      } else {
+        expandButton.style.display = 'none';
+      }
     } else {
       recentlyPlayedList.innerHTML = '<p style="text-align: center; color: var(--text-secondary); padding: 24px;">No recent plays</p>';
+      expandButton.style.display = 'none';
     }
   }
 }
@@ -343,3 +386,77 @@ function getTimeAgo(date) {
   const days = Math.floor(hours / 24);
   return `${days}d ago`;
 }
+
+export function renderPlaylistDetail(playlist, songs) {
+  const nameEl = document.getElementById('playlistDetailName');
+  const descEl = document.getElementById('playlistDetailDescription');
+  const tbody = document.getElementById('playlistDetailTableBody');
+  
+  if (!tbody) return;
+  
+  nameEl.textContent = playlist.name;
+  descEl.textContent = playlist.description || `${songs.length} songs`;
+  
+  tbody.innerHTML = '';
+  
+  if (songs.length === 0) {
+    tbody.innerHTML = `
+    <tr>
+      <td colspan=\"7\" class=\"empty-state\">
+        <div class=\"empty-state-content\">
+          <svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" width=\"64\" height=\"64\">
+            <path d=\"M9 18V5l12-2v13M9 18c0 1.66-1.34 3-3 3s-3-1.34-3-3 1.34-3 3-3 3 1.34 3 3z\"/>
+            <path d=\"M21 16c0 1.66-1.34 3-3 3s-3-1.34-3-3 1.34-3 3-3 3 1.34 3 3z\"/>
+          </svg>
+          <h3>No Songs in Playlist</h3>
+          <p>Add songs to this playlist from the library</p>
+        </div>
+      </td>
+    </tr>`;
+    return;
+  }
+  
+  songs.forEach((song, index) => {
+    const tr = document.createElement('tr');
+    const albumTitle = song.album || 'Unknown Album';
+    const truncatedAlbum = albumTitle.length > 30 ? albumTitle.substring(0, 30) + '...' : albumTitle;
+    tr.innerHTML = `
+      <td class=\"col-play\">
+        <button class=\"play-button\" data-index=\"${index}\">
+          <svg viewBox=\"0 0 24 24\" fill=\"currentColor\" width=\"16\" height=\"16\">
+            <path d=\"M8 5v14l11-7z\"/>
+          </svg>
+        </button>
+      </td>
+      <td class=\"col-cover\">
+        <img class=\"song-cover\" src=\"${songCoverUrl(song.id)}\" alt=\"${escapeHtml(song.title || 'Unknown')}\" onerror=\"this.style.display='none';\" />
+      </td>
+      <td class=\"col-title\">${escapeHtml(song.title || 'Unknown')}</td>
+      <td class=\"col-artist\">${escapeHtml(song.artist || 'Unknown Artist')}</td>
+      <td class=\"col-album\" title=\"${escapeHtml(albumTitle)}\">${escapeHtml(truncatedAlbum)}</td>
+      <td class=\"col-duration\">${formatDuration(song.duration)}</td>
+      <td class=\"col-remove\">
+        <button class=\"remove-from-playlist-btn\" data-song-id=\"${song.id}\" title=\"Remove from playlist\">
+          <svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" width=\"16\" height=\"16\">
+            <line x1=\"18\" y1=\"6\" x2=\"6\" y2=\"18\"></line>
+            <line x1=\"6\" y1=\"6\" x2=\"18\" y2=\"18\"></line>
+          </svg>
+        </button>
+      </td>
+    `;
+    
+    tbody.appendChild(tr);
+  });
+  
+  // Add click handlers for play buttons
+  const playButtons = tbody.querySelectorAll('.play-button');
+  playButtons.forEach(button => {
+    button.addEventListener('click', () => {
+      const index = parseInt(button.dataset.index);
+      if (window.onPlaySongFromPlaylist) {
+        window.onPlaySongFromPlaylist(songs, index);
+      }
+    });
+  });
+}
+
