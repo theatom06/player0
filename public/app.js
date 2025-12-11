@@ -158,6 +158,9 @@ async function removeFromPlaylist(playlistId, songId) {
       throw new Error('Failed to remove song');
     }
     
+    // Clear cache to ensure fresh data
+    clearCache();
+    
     // Reload playlist detail
     window.loadPlaylistDetail(playlistId);
   } catch (error) {
@@ -372,6 +375,10 @@ async function savePlaylist() {
   try {
     await createPlaylist(name, description, []);
     closePlaylistModal();
+    
+    // Clear cache to ensure fresh data
+    clearCache();
+    
     loadPlaylists();
   } catch (error) {
     console.error('Error creating playlist:', error);
@@ -449,6 +456,15 @@ window.openAddToPlaylistModal = async function(songId) {
           try {
             await addToPlaylist(playlist.id, songId);
             modal.style.display = 'none';
+            
+            // Clear cache to ensure fresh data
+            clearCache();
+            
+            // If currently viewing this playlist, reload it
+            if (window.currentPlaylistId === playlist.id) {
+              window.loadPlaylistDetail(playlist.id);
+            }
+            
             alert(`Added to ${playlist.name}`);
           } catch (error) {
             console.error('Error adding to playlist:', error);

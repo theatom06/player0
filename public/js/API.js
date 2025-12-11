@@ -167,6 +167,9 @@ async function listPlaylists() {
         throw new Error(data.message || 'Error creating playlist');
     }
     
+    // Clear playlist list cache
+    cache.delete(getCacheKey(`${API_URL}/playlists`));
+    
     return response.json();
 }
 
@@ -192,6 +195,10 @@ async function addToPlaylist(playlistId, songId) {
         const data = await response.json();
         throw new Error(data.message || 'Error adding to playlist');
     }
+    
+    // Clear cache for this playlist and playlist list
+    cache.delete(getCacheKey(`${API_URL}/playlists/${playlistId}`));
+    cache.delete(getCacheKey(`${API_URL}/playlists`));
     
     return response.json();
 }
