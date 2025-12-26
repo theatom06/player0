@@ -3,13 +3,27 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Player 0</title>
+  <meta name="description" content="Player 0 - Modern web-based music player with advanced library management">
+  <title>Player 0 🎵 Music Player</title>
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <link rel="stylesheet" href="main.css">
 </head>
 <body>
+  <!-- 
+    ============================================
+    Player 0 - Main Application Structure
+    ============================================
+    
+    Layout: Three-column grid (sidebar | content | now playing)
+    - Left: Navigation sidebar
+    - Center: Dynamic content views (loaded from /views/*.html)
+    - Right: Now playing sidebar (collapsible)
+    
+    Views are loaded dynamically via fetch() and injected into #viewContainer
+  -->
+  
   <div class="app-container">
-    <!-- Sidebar Navigation -->
+    <!-- ========== Navigation Sidebar ========== -->
     <nav class="sidebar">
       <div class="logo">
         <svg class="logo-icon" viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="2">
@@ -20,6 +34,7 @@
         <h1>Player 0</h1>
       </div>
       
+      <!-- Navigation Menu -->
       <div class="nav-menu">
         <a href="#" class="nav-item active" data-view="library">
           <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -114,181 +129,8 @@
 
       <!-- Content Views -->
       <div class="content-area">
-        <!-- Library View -->
-        <div class="view" id="libraryView">
-          <div class="view-header">
-            <h2>All Songs</h2>
-            <div class="view-controls">
-              <button class="btn-secondary" id="shuffleAll">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
-                  <path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/>
-                </svg>
-                Shuffle All
-              </button>
-              <button class="btn-primary" id="playAll">
-                <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
-                  <path d="M8 5v14l11-7z"/>
-                </svg>
-                Play All
-              </button>
-            </div>
-          </div>
-          <div class="song-table">
-            <table>
-              <thead>
-                <tr>
-                  <th class="col-play"></th>
-                  <th class="col-cover"></th>
-                  <th class="col-title">Title</th>
-                  <th class="col-artist">Artist</th>
-                  <th class="col-album">Album</th>
-                  <th class="col-duration">Duration</th>
-                  <th class="col-plays">Plays</th>
-                </tr>
-              </thead>
-              <tbody id="songTableBody">
-                <!-- Songs will be inserted here -->
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- Albums View -->
-        <div class="view hidden" id="albumsView">
-          <div class="view-header">
-            <h2>Albums</h2>
-          </div>
-          <div class="album-grid" id="albumGrid">
-            <!-- Albums will be inserted here -->
-          </div>
-        </div>
-
-        <!-- Album Detail View -->
-        <div class="view hidden" id="albumDetailView">
-          <button class="back-button" id="backToAlbums">← Back to Albums</button>
-          <div class="album-detail">
-            <div class="album-detail-header">
-              <img class="album-artwork" id="albumArtwork" src="" alt="Album artwork" />
-              <div class="album-info">
-                <h2 id="albumTitle"></h2>
-                <p class="album-artist" id="albumArtist"></p>
-                <p class="album-meta" id="albumMeta"></p>
-                <div class="album-actions">
-                  <button class="btn-primary" id="playAlbum">
-                    <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
-                      <path d="M8 5v14l11-7z"/>
-                    </svg>
-                    Play Album
-                  </button>
-                  <button class="btn-secondary" id="shuffleAlbum">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
-                      <path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/>
-                    </svg>
-                    Shuffle
-                  </button>
-                </div>
-              </div>
-            </div>
-            <div class="song-table">
-              <table>
-                <thead>
-                  <tr>
-                    <th class="col-track">#</th>
-                    <th class="col-play"></th>
-                    <th class="col-title">Title</th>
-                    <th class="col-duration">Duration</th>
-                  </tr>
-                </thead>
-                <tbody id="albumSongTableBody">
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-
-        <!-- Artists View -->
-        <div class="view hidden" id="artistsView">
-          <div class="view-header">
-            <h2>Artists</h2>
-          </div>
-          <div class="artist-list" id="artistList">
-            <!-- Artists will be inserted here -->
-          </div>
-        </div>
-
-        <!-- Playlists View -->
-        <div class="view hidden" id="playlistsView">
-          <div class="view-header">
-            <h2>Playlists</h2>
-            <button class="btn-primary" id="createPlaylist">+ New Playlist</button>
-          </div>
-          <div class="playlist-grid" id="playlistGrid">
-            <!-- Playlists will be inserted here -->
-          </div>
-        </div>
-
-        <!-- Playlist Detail View -->
-        <div class="view hidden" id="playlistDetailView">
-          <div class="view-header">
-            <div style="display: flex; align-items: center; gap: 16px;">
-              <button class="btn-secondary" id="backToPlaylists">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
-                  <path d="M19 12H5M12 19l-7-7 7-7"/>
-                </svg>
-                Back
-              </button>
-              <div>
-                <h2 id="playlistDetailName">Playlist</h2>
-                <p id="playlistDetailDescription" style="margin: 4px 0 0 0; color: var(--text-secondary); font-size: 14px;"></p>
-              </div>
-            </div>
-            <button class="btn-primary" id="playPlaylistAll">
-              <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16" style="margin-right: 4px;">
-                <path d="M8 5v14l11-7z"/>
-              </svg>
-              Play All
-            </button>
-          </div>
-          <div class="song-table-container">
-            <table class="song-table">
-              <thead>
-                <tr>
-                  <th class="col-play"></th>
-                  <th class="col-cover"></th>
-                  <th class="col-title">Title</th>
-                  <th class="col-artist">Artist</th>
-                  <th class="col-album">Album</th>
-                  <th class="col-duration">Duration</th>
-                  <th class="col-remove"></th>
-                </tr>
-              </thead>
-              <tbody id="playlistDetailTableBody">
-                <!-- Songs will be inserted here -->
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- Statistics View -->
-        <div class="view hidden" id="statsView">
-          <div class="view-header">
-            <h2>Statistics</h2>
-          </div>
-          <div class="stats-container">
-            <div class="stats-grid" id="statsGrid">
-              <!-- Stats will be inserted here -->
-            </div>
-            <div class="stats-section">
-              <h3>Most Played Songs</h3>
-              <div class="song-list" id="mostPlayedList"></div>
-            </div>
-            <div class="stats-section">
-              <h3>Recently Played</h3>
-              <div class="song-list" id="recentlyPlayedList"></div>
-              <button class="expand-button" id="recentlyPlayedExpand" style="display: none;">Show More</button>
-            </div>
-          </div>
-        </div>
+        <!-- Dynamic content container -->
+        <div id="viewContainer" class="view"></div>
       </div>
     </main>
 
@@ -435,6 +277,19 @@
           <div class="shortcut-item"><code>Ctrl/⌘ P</code> Show Shortcuts</div>
           <div class="shortcut-item"><code>Esc</code> Close Modal</div>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal for Statistics Lists (used when a stat doesn't have a dedicated page) -->
+  <div class="modal" id="statsListModal" style="display: none;">
+    <div class="modal-content shortcuts-modal">
+      <div class="modal-header">
+        <h3 id="statsListModalTitle">Statistics</h3>
+        <button class="modal-close" id="closeStatsListModal">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="stats-list" id="statsListModalBody"></div>
       </div>
     </div>
   </div>

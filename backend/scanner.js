@@ -1,3 +1,23 @@
+/**
+ * ============================================
+ * Music Scanner Module
+ * ============================================
+ * 
+ * Scans music directories and extracts metadata using music-metadata library.
+ * 
+ * Features:
+ * - Recursive directory traversal
+ * - ID3 tag extraction (title, artist, album, etc.)
+ * - Incremental updates (only scans modified files)
+ * - Play count preservation during updates
+ * - Batch processing with progress logging
+ * - Error handling per file (one bad file won't stop entire scan)
+ * 
+ * Supported Formats: MP3, FLAC, OGG, M4A, WAV
+ * 
+ * @module scanner
+ */
+
 import fs from 'fs/promises';
 import path from 'path';
 import { parseFile } from 'music-metadata';
@@ -5,16 +25,26 @@ import Storage from './storage.js';
 import configData from './config.json' with { type: 'json' };
 
 class MusicScanner {
+  /**
+   * Initialize music scanner with configuration
+   */
   constructor() {
     this.storage = new Storage(configData.dataDirectory);
     this.supportedFormats = configData.supportedFormats;
     this.musicDirectories = configData.musicDirectories;
   }
 
+  /**
+   * Scan all configured music directories
+   * Performs incremental scan - only processes new/modified files
+   * Preserves play counts and other user data during updates
+   * @returns {Object} Scan results with added/updated/total counts
+   */
   async scan() {
     console.log('Starting music library scan...');
     await this.storage.init();
     
+    // Load existing songs for comparison
     const songs = await this.storage.getSongs();
     const existingSongs = new Map(songs.map(song => [song.filePath, song]));
     
@@ -22,6 +52,7 @@ class MusicScanner {
     let totalUpdated = 0;
     let allSongs = [];
 
+    // Scan each configured directory
     for (const directory of this.musicDirectories) {
       try {
         await fs.access(directory);
@@ -35,18 +66,29 @@ class MusicScanner {
       }
     }
 
-    // Save all songs
+    // Save all songs to storage
     await this.storage.saveSongs(allSongs);
     
     console.log(`\nScan complete! Added: ${totalAdded}, Updated: ${totalUpdated}, Total: ${allSongs.length}`);
     return { added: totalAdded, updated: totalUpdated, total: allSongs.length };
   }
 
+  /**
+   * Scan a single directory recursively
+   * Walks through all subdirectories and processes audio files
+   * @param {string} directory - Root directory to scan
+   * @param {Map} existingSongs - Map of existing songs by file path
+   * @returns {Object} Results with added/updated counts and song list
+   */
   async scanDirectory(directory, existingSongs) {
     let added = 0;
     let updated = 0;
     let songs = [];
 
+    /**
+     * Async generator for recursive directory traversal
+     * Yields full file paths for all files in directory tree
+     */
     async function* walk(dir) {
       const entries = await fs.readdir(dir, { withFileTypes: true });
       for (const entry of entries) {
@@ -59,9 +101,11 @@ class MusicScanner {
       }
     }
 
+    // Process each file in the directory tree
     for await (const filePath of walk(directory)) {
       const ext = path.extname(filePath).toLowerCase();
       
+      // Only process supported audio formats
       if (this.supportedFormats.includes(ext)) {
         try {
           const stats = await fs.stat(filePath);
@@ -69,17 +113,17 @@ class MusicScanner {
           
           const existingSong = existingSongs.get(filePath);
           
-          // If exists and hasn't been modified, keep it
+          // Skip if file hasn't been modified since last scan
           if (existingSong && existingSong.lastModified === lastModified) {
             songs.push(existingSong);
             continue;
           }
           
-          // Extract metadata
+          // Extract metadata from audio file
           const metadata = await this.extractMetadata(filePath, stats);
           
           if (existingSong) {
-            // Update existing song, preserving play stats
+            // Update existing song, preserve user data (play stats)
             const updatedSong = {
               ...existingSong,
               ...metadata,
@@ -90,7 +134,7 @@ class MusicScanner {
             songs.push(updatedSong);
             updated++;
           } else {
-            // New song
+            // New song - create with default values
             const newSong = {
               id: this.generateId(filePath),
               ...metadata,
@@ -104,6 +148,7 @@ class MusicScanner {
             added++;
           }
           
+          // Progress logging every 100 files
           if ((added + updated) % 100 === 0) {
             console.log(`Processed ${added + updated} files...`);
           }
@@ -116,6 +161,14 @@ class MusicScanner {
     return { added, updated, songs };
   }
 
+  /**
+   * Extract metadata from audio file using music-metadata library
+   * Parses ID3 tags and audio format information
+   * Falls back to filename if metadata extraction fails
+   * @param {string} filePath - Path to audio file
+   * @param {Object} stats - File system stats object
+   * @returns {Object} Extracted metadata
+   */
   async extractMetadata(filePath, stats) {
     try {
       const metadata = await parseFile(filePath);
@@ -137,6 +190,7 @@ class MusicScanner {
       };
     } catch (error) {
       console.error(`Error extracting metadata from ${filePath}:`, error.message);
+      // Return basic metadata from filename if extraction fails
       return {
         title: path.basename(filePath, path.extname(filePath)),
         artist: 'Unknown Artist',
@@ -154,19 +208,31 @@ class MusicScanner {
     }
   }
 
+  /**
+   * Generate unique ID for a song based on file path and timestamp
+   * Uses simple hash algorithm combined with timestamp for uniqueness
+   * @param {string} filePath - File path to hash
+   * @returns {string} Base36 encoded unique ID
+   */
   generateId(filePath) {
-    // Generate a simple hash-based ID from file path
     let hash = 0;
     for (let i = 0; i < filePath.length; i++) {
       const char = filePath.charCodeAt(i);
       hash = ((hash << 5) - hash) + char;
-      hash = hash & hash;
+      hash = hash & hash; // Convert to 32-bit integer
     }
     return Math.abs(hash).toString(36) + Date.now().toString(36);
   }
 }
 
-// Run scanner if this file is executed directly
+// ============================================
+// CLI Entry Point
+// ============================================
+
+/**
+ * Run scanner directly from command line
+ * Usage: bun run backend/scanner.js
+ */
 if (import.meta.url === `file://${process.argv[1]}`) {
   const scanner = new MusicScanner();
   scanner.scan().then(() => {

@@ -1,0 +1,39 @@
+<button class="back-button" id="backToAlbums">← Back to Albums</button>
+<div class="album-detail">
+  <div class="album-detail-header">
+    <img class="album-artwork" id="albumArtwork" src="" alt="Album artwork" />
+    <div class="album-info">
+      <h2 id="albumTitle"></h2>
+      <p class="album-artist" id="albumArtist"></p>
+      <p class="album-meta" id="albumMeta"></p>
+      <div class="album-actions">
+        <button class="btn-primary" id="playAlbum">
+          <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+            <path d="M8 5v14l11-7z"/>
+          </svg>
+          Play Album
+        </button>
+        <button class="btn-secondary" id="shuffleAlbum">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+            <path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/>
+          </svg>
+          Shuffle
+        </button>
+      </div>
+    </div>
+  </div>
+  <div class="song-table">
+    <table>
+      <thead>
+        <tr>
+          <th class="col-track">#</th>
+          <th class="col-play"></th>
+          <th class="col-title">Title</th>
+          <th class="col-duration">Duration</th>
+        </tr>
+      </thead>
+      <tbody id="albumSongTableBody">
+      </tbody>
+    </table>
+  </div>
+</div>

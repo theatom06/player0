@@ -1,23 +1,49 @@
-// Application State Management
+/**
+ * ============================================
+ * Application State Management
+ * ============================================
+ * 
+ * Centralized state management for the music player.
+ * Manages songs, queue, and playback state.
+ * 
+ * State Variables:
+ * - allSongs: Complete library of songs
+ * - currentSongs: Currently displayed/filtered songs
+ * - queue: Playback queue
+ * - currentIndex: Current position in queue
+ * - isPlaying: Playback status
+ * 
+ * @module state
+ */
 
 /**
- * Application State
- * @type {Array<any>}
+ * Complete song library
+ * @type {Array<Object>}
  */
 export let allSongs = [];
 
 /**
- * Current Songs in View
- * @type {Array<any>}
+ * Currently displayed songs (filtered/searched)
+ * @type {Array<Object>}
  */
 export let currentSongs = [];
 
 /**
- * Playback Queue
- * @type {Array<any>}
+ * Playback queue
+ * @type {Array<Object>}
  */
 export let queue = [];
+
+/**
+ * Current song index in queue
+ * @type {number}
+ */
 export let currentIndex = -1;
+
+/**
+ * Playback state
+ * @type {boolean}
+ */
 export let isPlaying = false;
 
 /**

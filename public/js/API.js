@@ -1,7 +1,9 @@
 // ============================================
 // API Configuration - Change URL here only
 // ============================================
-const API_URL = 'https://ominous-space-guide-g95r5vgg75rcwx64-3000.app.github.dev/api';
+// Default: same-origin backend (works in local dev, Codespaces, and production)
+// Optional override: set `window.__PLAYER0_API_URL = 'https://example.com/api'` before this module loads.
+const API_URL = window.__PLAYER0_API_URL || `${window.location.origin}/api`;
 
 // Export API_URL for use in other modules
 export { API_URL };
@@ -154,53 +156,84 @@ async function listArtists() {
 // ============================================
 
 async function listPlaylists() {
-    return await fetchWithCache(`${API_URL}/playlists`);
-}async function createPlaylist(name, description, songIds = []) {
+    const data = await fetchWithCache(`${API_URL}/playlists`);
+    return data;
+}
+
+async function getPlaylist(id) {
+    const data = await fetchWithCache(`${API_URL}/playlists/${id}`);
+    return data;
+}
+
+async function createPlaylist(name, description = '', songIds = []) {
     const response = await fetch(`${API_URL}/playlists`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, description, songIds })
     });
     
-    if(!response.ok) {
+    if (!response.ok) {
         const data = await response.json();
-        throw new Error(data.message || 'Error creating playlist');
+        throw new Error(data.error || 'Failed to create playlist');
     }
     
-    // Clear playlist list cache
+    // Clear cache
     cache.delete(getCacheKey(`${API_URL}/playlists`));
     
-    return response.json();
+    return await response.json();
 }
 
-async function getPlaylist(id) {
-    return await fetchWithCache(`${API_URL}/playlists/${id}`);
+async function updatePlaylist(id, updates) {
+    const response = await fetch(`${API_URL}/playlists/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updates)
+    });
+    
+    if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to update playlist');
+    }
+    
+    // Clear cache
+    cache.delete(getCacheKey(`${API_URL}/playlists/${id}`));
+    cache.delete(getCacheKey(`${API_URL}/playlists`));
+    
+    return await response.json();
 }
 
-async function addToPlaylist(playlistId, songId) {
+async function deletePlaylist(id) {
+    const response = await fetch(`${API_URL}/playlists/${id}`, {
+        method: 'DELETE'
+    });
+    
+    if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to delete playlist');
+    }
+    
+    // Clear cache
+    cache.delete(getCacheKey(`${API_URL}/playlists/${id}`));
+    cache.delete(getCacheKey(`${API_URL}/playlists`));
+    
+    return await response.json();
+}
+
+async function addSongToPlaylist(playlistId, songId) {
     const playlist = await getPlaylist(playlistId);
     const songIds = playlist.songIds || [];
     
-    if (!songIds.includes(songId)) {
-        songIds.push(songId);
+    if (songIds.includes(songId)) {
+        return playlist; // Already in playlist
     }
     
-    const response = await fetch(`${API_URL}/playlists/${playlistId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ songIds })
-    });
-    
-    if(!response.ok) {
-        const data = await response.json();
-        throw new Error(data.message || 'Error adding to playlist');
-    }
-    
-    // Clear cache for this playlist and playlist list
-    cache.delete(getCacheKey(`${API_URL}/playlists/${playlistId}`));
-    cache.delete(getCacheKey(`${API_URL}/playlists`));
-    
-    return response.json();
+    return await updatePlaylist(playlistId, { songIds: [...songIds, songId] });
+}
+
+async function removeSongFromPlaylist(playlistId, songId) {
+    const playlist = await getPlaylist(playlistId);
+    const songIds = (playlist.songIds || []).filter(id => id !== songId);
+    return await updatePlaylist(playlistId, { songIds });
 }
 
 // ============================================
@@ -240,9 +273,12 @@ export {
     albumCoverUrl,
     listArtists,
     listPlaylists,
-    createPlaylist,
     getPlaylist,
-    addToPlaylist,
+    createPlaylist,
+    updatePlaylist,
+    deletePlaylist,
+    addSongToPlaylist,
+    removeSongFromPlaylist,
     getStats,
     scanLibrary,
     clearCache

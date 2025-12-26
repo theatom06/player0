@@ -1,37 +1,53 @@
-/* Base Styles & Variables */
+/**
+ * ============================================
+ * Base Styles & CSS Variables
+ * ============================================
+ * 
+ * Foundation styles for the entire application:
+ * - CSS custom properties (variables)
+ * - Global resets
+ * - Layout grid structure
+ * - Base typography
+ */
 
+/* ========== Global Reset ========== */
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
 }
 
+/* ========== CSS Variables ========== */
 :root {
-  --primary: #1db954;
-  --primary-dark: #1aa34a;
-  --bg-dark: #121212;
-  --bg-medium: #181818;
-  --bg-light: #282828;
-  --text-primary: #ffffff;
-  --text-secondary: #b3b3b3;
-  --border: #404040;
-  --hover: rgba(255, 255, 255, 0.1);
+  /* Colors */
+  --primary: #1db954;           /* Spotify-inspired green */
+  --primary-dark: #1aa34a;      /* Darker green for hover */
+  --bg-dark: #121212;           /* Darkest background */
+  --bg-medium: #181818;         /* Medium background */
+  --bg-light: #282828;          /* Light background for cards */
+  --text-primary: #ffffff;      /* Primary text color */
+  --text-secondary: #b3b3b3;    /* Secondary/muted text */
+  --border: #404040;            /* Border color */
+  --hover: rgba(255, 255, 255, 0.1);  /* Hover overlay */
 }
 
+/* ========== Base Typography ========== */
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
   background: var(--bg-dark);
   color: var(--text-primary);
-  overflow: hidden;
+  overflow: hidden;  /* Prevent page scroll, use internal scrolling */
 }
 
-/* Layout */
+/* ========== Layout Grid ========== */
+/* Three-column layout: sidebar | main content | now playing */
 .app-container {
   display: grid;
   grid-template-columns: 240px 1fr 320px;
   height: 100vh;
 }
 
+/* Two-column layout when now playing sidebar is hidden */
 .app-container.sidebar-closed {
   grid-template-columns: 240px 1fr;
 }

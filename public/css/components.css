@@ -198,17 +198,23 @@
   border: none;
   color: var(--text-secondary);
   cursor: pointer;
-  padding: 4px 8px;
-  border-radius: 4px;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  padding: 8px;
+  border-radius: 50%;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
   align-items: center;
   justify-content: center;
+  opacity: 0;
+}
+
+#playlistDetailView .song-table tbody tr:hover .remove-from-playlist-btn {
+  opacity: 1;
 }
 
 .remove-from-playlist-btn:hover {
-  background: var(--bg-light);
-  color: #ef4444;
+  background: rgba(239, 68, 68, 0.15);
+  color: #ff4444;
+  transform: scale(1.15) rotate(90deg);
 }
 
 /* Scrollbar */

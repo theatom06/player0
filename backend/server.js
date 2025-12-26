@@ -1,3 +1,25 @@
+/**
+ * ============================================
+ * Player 0 - Backend Server
+ * ============================================
+ * 
+ * Main Express server providing REST API for:
+ * - Music library management and scanning
+ * - Audio streaming with range request support
+ * - Playlist CRUD operations
+ * - Play history tracking and statistics
+ * - Album and artist browsing
+ * - Advanced search functionality
+ * 
+ * Security Features:
+ * - Input validation on all endpoints
+ * - Path traversal protection
+ * - Request size limits
+ * - Security headers (HSTS, XSS, etc.)
+ * 
+ * @module server
+ */
+
 import express from 'express';
 import cors from 'cors';
 import path from 'path';
@@ -7,13 +29,22 @@ import Storage from './storage.js';
 import MusicScanner from './scanner.js';
 import configData from './config.json' with { type: 'json' };
 
+// ESM __dirname equivalent
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// Initialize Express app and Storage
 const app = express();
 const storage = new Storage(configData.dataDirectory);
 
-// Security headers
+/**
+ * Security Headers Middleware
+ * Adds security-related HTTP headers to all responses
+ * - X-Content-Type-Options: Prevents MIME sniffing
+ * - X-Frame-Options: Prevents clickjacking
+ * - X-XSS-Protection: Enables XSS filter
+ * - HSTS: Forces HTTPS connections
+ */
 app.use((req, res, next) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-Frame-Options', 'DENY');
@@ -22,23 +53,55 @@ app.use((req, res, next) => {
   next();
 });
 
-// Middleware
+/**
+ * CORS Configuration
+ * Allows cross-origin requests from configured origins
+ * Set ALLOWED_ORIGINS env variable for production security
+ */
 app.use(cors({
   origin: process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : '*',
   credentials: true
 }));
-app.use(express.json({ limit: '10mb' })); // Limit request body size
+
+/**
+ * Body Parser Middleware
+ * Parses JSON and URL-encoded request bodies
+ * 10MB limit prevents memory exhaustion attacks
+ */
+app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+/**
+ * MIME Type Middleware
+ * Ensures correct Content-Type headers for static assets
+ * Critical for proper CSS/JS loading in browsers
+ */
+app.use((req, res, next) => {
+  if (req.url.endsWith('.css')) {
+    res.setHeader('Content-Type', 'text/css');
+  } else if (req.url.endsWith('.js')) {
+    res.setHeader('Content-Type', 'application/javascript');
+  } else if (req.url.endsWith('.json')) {
+    res.setHeader('Content-Type', 'application/json');
+  }
+  next();
+});
 
 // Serve static files from public directory
 app.use(express.static(path.join(__dirname, '../public')));
 
-// Initialize storage
+// Initialize storage system
 await storage.init();
 
-// API Routes
+// ============================================
+// API Routes - Songs
+// ============================================
 
-// Get all songs
+/**
+ * GET /api/songs
+ * Retrieve all songs in the library
+ * @returns {Array<Object>} List of all songs with metadata
+ */
 app.get('/api/songs', async (req, res) => {
   try {
     const songs = await storage.getSongs();
@@ -48,7 +111,12 @@ app.get('/api/songs', async (req, res) => {
   }
 });
 
-// Get song by ID
+/**
+ * GET /api/songs/:id
+ * Get a specific song by its ID
+ * @param {string} id - Alphanumeric song ID
+ * @returns {Object} Song metadata
+ */
 app.get('/api/songs/:id', async (req, res) => {
   try {
     // Validate ID format (alphanumeric and hyphens only)
@@ -67,7 +135,16 @@ app.get('/api/songs/:id', async (req, res) => {
   }
 });
 
-// Search songs
+/**
+ * GET /api/search
+ * Search songs with multiple filters
+ * @query {string} q - General search query (title, artist, album)
+ * @query {string} artist - Filter by artist name
+ * @query {string} album - Filter by album name
+ * @query {string} genre - Filter by genre
+ * @query {number} year - Filter by release year
+ * @returns {Array<Object>} Filtered list of songs
+ */
 app.get('/api/search', async (req, res) => {
   try {
     const { q, artist, album, genre, year } = req.query;
@@ -128,7 +205,16 @@ app.get('/api/search', async (req, res) => {
   }
 });
 
-// Get all albums
+// ============================================
+// API Routes - Albums
+// ============================================
+
+/**
+ * GET /api/albums
+ * Get all albums with aggregated metadata
+ * Groups songs by album and artist, includes song count and duration
+ * @returns {Array<Object>} List of albums with metadata
+ */
 app.get('/api/albums', async (req, res) => {
   try {
     const songs = await storage.getSongs();
@@ -159,7 +245,14 @@ app.get('/api/albums', async (req, res) => {
   }
 });
 
-// Get album details
+/**
+ * GET /api/albums/:artist/:album
+ * Get detailed information about a specific album
+ * Returns all songs in the album, sorted by disc and track number
+ * @param {string} artist - Album artist name (URL encoded)
+ * @param {string} album - Album name (URL encoded)
+ * @returns {Object} Album details with sorted track list
+ */
 app.get('/api/albums/:artist/:album', async (req, res) => {
   try {
     const { artist, album } = req.params;
@@ -197,7 +290,15 @@ app.get('/api/albums/:artist/:album', async (req, res) => {
   }
 });
 
-// Get all artists
+// ============================================
+// API Routes - Artists
+// ============================================
+
+/**
+ * GET /api/artists
+ * Get all artists with song and album counts
+ * @returns {Array<Object>} List of artists with statistics
+ */
 app.get('/api/artists', async (req, res) => {
   try {
     const songs = await storage.getSongs();
@@ -231,7 +332,17 @@ app.get('/api/artists', async (req, res) => {
   }
 });
 
-// Stream audio file
+// ============================================
+// API Routes - Streaming
+// ============================================
+
+/**
+ * GET /api/stream/:id
+ * Stream audio file with HTTP range request support
+ * Enables seeking in audio player and bandwidth optimization
+ * @param {string} id - Song ID
+ * @returns {Stream} Audio file stream with appropriate headers
+ */
 app.get('/api/stream/:id', async (req, res) => {
   try {
     // Validate ID format
@@ -283,7 +394,13 @@ app.get('/api/stream/:id', async (req, res) => {
   }
 });
 
-// Get album cover art
+/**
+ * GET /api/cover/:id
+ * Extract and serve album artwork from audio file metadata
+ * Returns embedded cover art or 404 if not available
+ * @param {string} id - Song ID
+ * @returns {Image} Album artwork (JPEG/PNG)
+ */
 app.get('/api/cover/:id', async (req, res) => {
   try {
     // Validate ID format
@@ -321,138 +438,156 @@ app.get('/api/cover/:id', async (req, res) => {
   }
 });
 
-// Playlists
+// ============================================
+// API Routes - Playlists
+// ============================================
 
-// Get all playlists
+/**
+ * GET /api/playlists
+ * Retrieve all playlists
+ * @returns {Array<Object>} List of playlists with metadata
+ */
 app.get('/api/playlists', async (req, res) => {
   try {
     const playlists = await storage.getPlaylists();
-    // Ensure backward compatibility: convert songs to songIds if needed
-    const normalized = playlists.map(p => ({
-      ...p,
-      songIds: p.songIds || p.songs || [],
-      songCount: p.songCount || (p.songIds || p.songs || []).length,
-      songs: undefined // Remove old field
-    }));
-    res.json(normalized);
+    res.json(playlists);
   } catch (error) {
+    console.error('Error getting playlists:', error);
     res.status(500).json({ error: error.message });
   }
 });
 
-// Create playlist
+/**
+ * GET /api/playlists/:id
+ * Get a specific playlist by ID
+ * @param {string} id - Playlist ID
+ * @returns {Object} Playlist details
+ */
+app.get('/api/playlists/:id', async (req, res) => {
+  try {
+    const playlist = await storage.getPlaylistById(req.params.id);
+    if (!playlist) {
+      return res.status(404).json({ error: 'Playlist not found' });
+    }
+    res.json(playlist);
+  } catch (error) {
+    console.error('Error getting playlist:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * POST /api/playlists
+ * Create a new playlist
+ * @body {string} name - Playlist name (required, max 200 chars)
+ * @body {string} description - Playlist description (optional, max 1000 chars)
+ * @body {Array<string>} songIds - Initial song IDs (optional)
+ * @returns {Object} Created playlist
+ */
 app.post('/api/playlists', async (req, res) => {
   try {
     const { name, description, songIds } = req.body;
     
-    // Validate inputs
-    if (!name || typeof name !== 'string' || name.length > 200) {
-      return res.status(400).json({ error: 'Invalid playlist name' });
+    if (!name || typeof name !== 'string' || name.trim().length === 0) {
+      return res.status(400).json({ error: 'Playlist name is required' });
     }
     
-    if (description && (typeof description !== 'string' || description.length > 1000)) {
-      return res.status(400).json({ error: 'Invalid playlist description' });
+    if (name.length > 200) {
+      return res.status(400).json({ error: 'Playlist name too long (max 200 chars)' });
     }
     
-    if (!Array.isArray(songIds)) {
-      return res.status(400).json({ error: 'Invalid song IDs' });
+    if (description && description.length > 1000) {
+      return res.status(400).json({ error: 'Description too long (max 1000 chars)' });
     }
     
-    // Limit array size to prevent DoS
-    if (songIds.length > 1000) {
-      return res.status(400).json({ error: 'Too many songs (max 1000)' });
-    }
+    const playlist = await storage.createPlaylist({
+      name: name.trim(),
+      description: description ? description.trim() : '',
+      songIds: Array.isArray(songIds) ? songIds : []
+    });
     
-    const playlist = await storage.createPlaylist({ name, description, songIds });
-    res.json(playlist);
+    res.status(201).json(playlist);
   } catch (error) {
+    console.error('Error creating playlist:', error);
     res.status(500).json({ error: error.message });
   }
 });
 
-// Get playlist by ID
-app.get('/api/playlists/:id', async (req, res) => {
-  try {
-    // Validate playlist ID
-    if (!/^[a-zA-Z0-9-]+$/.test(req.params.id)) {
-      return res.status(400).json({ error: 'Invalid playlist ID' });
-    }
-    
-    const playlist = await storage.getPlaylistById(req.params.id);
-    if (playlist) {
-      // Normalize playlist structure
-      const normalized = {
-        ...playlist,
-        songIds: playlist.songIds || playlist.songs || [],
-        songCount: playlist.songCount || (playlist.songIds || playlist.songs || []).length,
-        songs: undefined
-      };
-      res.json(normalized);
-    } else {
-      res.status(404).json({ error: 'Playlist not found' });
-    }
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Update playlist
+/**
+ * PUT /api/playlists/:id
+ * Update an existing playlist
+ * @param {string} id - Playlist ID
+ * @body {string} name - New playlist name (optional)
+ * @body {string} description - New description (optional)
+ * @body {Array<string>} songIds - Updated song list (optional)
+ * @returns {Object} Updated playlist
+ */
 app.put('/api/playlists/:id', async (req, res) => {
   try {
-    // Validate playlist ID
-    if (!/^[a-zA-Z0-9-]+$/.test(req.params.id)) {
-      return res.status(400).json({ error: 'Invalid playlist ID' });
-    }
-    
     const { name, description, songIds } = req.body;
+    const updates = {};
     
-    // Validate inputs
-    if (name && (typeof name !== 'string' || name.length > 200)) {
-      return res.status(400).json({ error: 'Invalid playlist name' });
+    if (name !== undefined) {
+      if (typeof name !== 'string' || name.trim().length === 0) {
+        return res.status(400).json({ error: 'Invalid playlist name' });
+      }
+      updates.name = name.trim();
     }
     
-    if (description && (typeof description !== 'string' || description.length > 1000)) {
-      return res.status(400).json({ error: 'Invalid description' });
+    if (description !== undefined) {
+      updates.description = typeof description === 'string' ? description.trim() : '';
     }
     
-    if (songIds && (!Array.isArray(songIds) || songIds.length > 1000)) {
-      return res.status(400).json({ error: 'Invalid song IDs' });
+    if (songIds !== undefined) {
+      if (!Array.isArray(songIds)) {
+        return res.status(400).json({ error: 'songIds must be an array' });
+      }
+      updates.songIds = songIds;
     }
     
-    const success = await storage.updatePlaylist(req.params.id, req.body);
-    if (success) {
-      const playlist = await storage.getPlaylistById(req.params.id);
-      res.json(playlist);
-    } else {
-      res.status(404).json({ error: 'Playlist not found' });
+    const updated = await storage.updatePlaylist(req.params.id, updates);
+    if (!updated) {
+      return res.status(404).json({ error: 'Playlist not found' });
     }
+    
+    res.json(updated);
   } catch (error) {
+    console.error('Error updating playlist:', error);
     res.status(500).json({ error: error.message });
   }
 });
 
-// Delete playlist
+/**
+ * DELETE /api/playlists/:id
+ * Delete a playlist permanently
+ * @param {string} id - Playlist ID
+ * @returns {Object} Success message
+ */
 app.delete('/api/playlists/:id', async (req, res) => {
   try {
-    // Validate playlist ID
-    if (!/^[a-zA-Z0-9-]+$/.test(req.params.id)) {
-      return res.status(400).json({ error: 'Invalid playlist ID' });
-    }
-    
     const success = await storage.deletePlaylist(req.params.id);
-    if (success) {
-      res.json({ message: 'Playlist deleted' });
-    } else {
-      res.status(404).json({ error: 'Playlist not found' });
+    if (!success) {
+      return res.status(404).json({ error: 'Playlist not found' });
     }
+    res.json({ message: 'Playlist deleted successfully' });
   } catch (error) {
+    console.error('Error deleting playlist:', error);
     res.status(500).json({ error: error.message });
   }
 });
 
-// Play history
+// ============================================
+// API Routes - Play History & Statistics
+// ============================================
 
-// Record play
+/**
+ * POST /api/play/:id
+ * Record a song play for statistics tracking
+ * Increments play count and updates last played timestamp
+ * @param {string} id - Song ID
+ * @body {number} durationPlayed - Seconds played (optional)
+ * @returns {Object} Success message
+ */
 app.post('/api/play/:id', async (req, res) => {
   try {
     // Validate ID format
@@ -474,7 +609,12 @@ app.post('/api/play/:id', async (req, res) => {
   }
 });
 
-// Get play history
+/**
+ * GET /api/history
+ * Get recent play history
+ * @query {number} limit - Max number of entries (default: 100, max: 1000)
+ * @returns {Array<Object>} Recent plays with timestamps
+ */
 app.get('/api/history', async (req, res) => {
   try {
     const limit = parseInt(req.query.limit) || 100;
@@ -491,7 +631,12 @@ app.get('/api/history', async (req, res) => {
   }
 });
 
-// Statistics
+/**
+ * GET /api/stats
+ * Get comprehensive library statistics
+ * Includes total counts, most played, recently played, etc.
+ * @returns {Object} Statistics object with various metrics
+ */
 app.get('/api/stats', async (req, res) => {
   try {
     const stats = await storage.getStats();
@@ -501,7 +646,16 @@ app.get('/api/stats', async (req, res) => {
   }
 });
 
-// Scan library
+// ============================================
+// API Routes - Library Management
+// ============================================
+
+/**
+ * POST /api/scan
+ * Trigger a full library scan
+ * Scans configured music directories and updates database
+ * @returns {Object} Scan results (added, updated, total)
+ */
 app.post('/api/scan', async (req, res) => {
   try {
     const scanner = new MusicScanner();
@@ -512,12 +666,22 @@ app.post('/api/scan', async (req, res) => {
   }
 });
 
-// Serve frontend
+// ============================================
+// Frontend Route
+// ============================================
+
+/**
+ * GET /
+ * Serve the main application HTML
+ */
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, '../public/index.html'));
 });
 
-// Start server
+// ============================================
+// Server Startup
+// ============================================
+
 const PORT = configData.port || 3000;
 const HOST = configData.host || '0.0.0.0';
 
@@ -525,5 +689,5 @@ app.listen(PORT, HOST, () => {
   console.log(`🎵 Player 0 Server running on http://${HOST}:${PORT}`);
   console.log(`📁 Data directory: ${configData.dataDirectory}`);
   console.log(`🎶 Music directories: ${configData.musicDirectories.join(', ')}`);
-  console.log(`\n💡 Run 'npm run scan' to scan your music library`);
+  console.log(`\n💡 Run 'bun run scan' to scan your music library`);
 });

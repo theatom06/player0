@@ -1,0 +1,35 @@
+<div class="view-header">
+  <h2>Library</h2>
+  <div class="view-controls">
+    <button class="btn-primary" id="playAll">
+      <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+        <path d="M8 5v14l11-7z"/>
+      </svg>
+      Play All
+    </button>
+    <button class="btn-secondary" id="shuffleAll">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+        <path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/>
+      </svg>
+      Shuffle
+    </button>
+  </div>
+</div>
+<div class="song-table">
+  <table>
+    <thead>
+      <tr>
+        <th class="col-play"></th>
+        <th class="col-cover"></th>
+        <th class="col-title">Title</th>
+        <th class="col-artist">Artist</th>
+        <th class="col-album">Album</th>
+        <th class="col-duration">Duration</th>
+        <th class="col-plays">Plays</th>
+      </tr>
+    </thead>
+    <tbody id="songTableBody">
+      <!-- Songs will be inserted here -->
+    </tbody>
+  </table>
+</div>

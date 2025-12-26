@@ -79,6 +79,41 @@
   color: var(--text-secondary);
 }
 
+.song-table-container {
+  margin-top: 24px;
+  padding: 0;
+}
+
+#playlistDetailView .song-table-container {
+  background: var(--bg-dark);
+  border-radius: 12px;
+  padding: 0;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+#playlistDetailView .song-table {
+  background: transparent;
+}
+
+#playlistDetailView .song-table thead {
+  background: var(--bg-medium);
+}
+
+#playlistDetailView .song-table tbody tr {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+#playlistDetailView .song-table tbody tr:hover {
+  background: var(--bg-medium);
+  transform: none;
+  box-shadow: none;
+}
+
+#playlistDetailView .song-table tbody tr:last-child {
+  border-bottom: none;
+}
+
 .col-duration {
   width: 80px;
   color: var(--text-secondary);
@@ -103,20 +138,39 @@
 .play-button {
   background: none;
   border: none;
-  color: var(--text-primary);
+  color: var(--accent);
   cursor: pointer;
   opacity: 0;
-  transition: opacity 0.2s;
-  padding: 4px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  padding: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
+  border-radius: 50%;
+  pointer-events: auto;
+  position: relative;
+  z-index: 10;
+}
+
+.play-button:hover {
+  background: rgba(29, 185, 84, 0.15);
+  transform: scale(1.2);
 }
 
 .play-button svg {
   display: block;
+  pointer-events: none;
 }
 
 .song-table tbody tr:hover .play-button {
+  opacity: 1;
+}
+
+#playlistDetailView .song-table .play-button {
+  opacity: 0.6;
+}
+
+#playlistDetailView .song-table tbody tr:hover .play-button,
+#playlistDetailView .song-table .play-button:hover {
   opacity: 1;
 }

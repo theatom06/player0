@@ -1,5 +1,20 @@
-/* Player 0 - Main Stylesheet */
-/* Import all modular CSS files */
+/**
+ * ============================================
+ * Player 0 - Main Stylesheet
+ * ============================================
+ * 
+ * Modular CSS architecture for maintainability.
+ * Each file handles a specific UI concern.
+ * 
+ * Files:
+ * - base.css: CSS variables, reset, layout grid
+ * - sidebar.css: Left navigation sidebar
+ * - header.css: Top header with search
+ * - library.css: Song table and library view
+ * - views.css: Album, artist, playlist views
+ * - player.css: Now playing sidebar and controls
+ * - components.css: Modals, buttons, cards
+ */
 
 @import url('./css/base.css');
 @import url('./css/sidebar.css');
