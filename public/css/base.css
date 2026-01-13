@@ -20,15 +20,43 @@
 /* ========== CSS Variables ========== */
 :root {
   /* Colors */
-  --primary: #1db954;           /* Spotify-inspired green */
-  --primary-dark: #1aa34a;      /* Darker green for hover */
-  --bg-dark: #121212;           /* Darkest background */
-  --bg-medium: #181818;         /* Medium background */
-  --bg-light: #282828;          /* Light background for cards */
-  --text-primary: #ffffff;      /* Primary text color */
-  --text-secondary: #b3b3b3;    /* Secondary/muted text */
-  --border: #404040;            /* Border color */
-  --hover: rgba(255, 255, 255, 0.1);  /* Hover overlay */
+  --primary: #7aa2ff;           /* Soft blue highlight */
+  --primary-dark: #5b86ff;      /* Darker blue for hover */
+  --accent: #e8ecff;            /* Near-white accent (borders/highlights) */
+  --bg-dark: #050713;           /* Near-black deep blue */
+  --bg-medium: #090f21;         /* Slightly lighter navy */
+  --bg-light: #0e1833;          /* Card surface */
+  --bg: var(--bg-dark);         /* Legacy alias (used in a few components) */
+  --text-primary: #f8fafc;      /* Primary text */
+  --text-secondary: #94a3b8;    /* Secondary/muted text */
+  --border: rgba(255, 255, 255, 0.08);
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --hover: rgba(255, 255, 255, 0.045);  /* Hover overlay */
+
+  /* Button tokens (white pills like the reference) */
+  --btn-primary-bg: #f8fafc;
+  --btn-primary-fg: #050713;
+  --btn-primary-hover-bg: #ffffff;
+  --btn-secondary-bg: rgba(255, 255, 255, 0.06);
+  --btn-secondary-border: rgba(255, 255, 255, 0.12);
+
+  /* Accents */
+  --glow-primary: rgba(122, 162, 255, 0.55);
+  --vignette: radial-gradient(1200px 700px at 50% -120px, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0) 55%);
+
+  /* Surfaces */
+  --surface-0: var(--bg-dark);
+  --surface-1: var(--bg-medium);
+  --surface-2: var(--bg-light);
+
+  /* Radii */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+
+  /* Shadows */
+  --shadow-1: 0 2px 10px rgba(0, 0, 0, 0.35);
+  --shadow-2: 0 10px 26px rgba(0, 0, 0, 0.55);
 }
 
 /* ========== Base Typography ========== */

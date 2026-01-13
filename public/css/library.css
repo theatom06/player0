@@ -1,43 +1,50 @@
 /* Song Table Styles */
 
 .song-table {
-  background: var(--bg-dark);
-  border-radius: 8px;
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
   overflow: hidden;
 }
 
 .song-table table {
   width: 100%;
   border-collapse: collapse;
+  table-layout: fixed;
 }
 
 .song-table thead {
-  background: var(--bg-light);
-  border-bottom: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.03);
 }
 
 .song-table th {
   padding: 12px 16px;
   text-align: left;
   font-size: 12px;
-  font-weight: 600;
-  text-transform: uppercase;
+  font-weight: 700;
   color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .song-table tbody tr {
-  border-bottom: 1px solid var(--border);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  cursor: pointer;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.song-table tbody tr:last-child {
+  border-bottom: none;
 }
 
 .song-table tbody tr:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  background: rgba(255, 255, 255, 0.03);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-1);
 }
 
 .song-table td {
   padding: 12px 16px;
+  vertical-align: middle;
 }
 
 .col-play {
@@ -55,6 +62,8 @@
   height: 40px;
   border-radius: 4px;
   object-fit: cover;
+  object-position: center;
+  display: block;
   background: var(--bg-light);
   transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -70,13 +79,138 @@
 }
 
 .col-title {
-  min-width: 200px;
+  width: 42%;
   font-weight: 600;
 }
 
-.col-artist, .col-album {
-  min-width: 150px;
+.col-title,
+.col-artist,
+.col-album {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.song-title-row {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.song-title-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.song-subtitle {
+  display: none;
   color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.song-sub-artist,
+.song-sub-album {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.song-sub-sep {
+  margin: 0 6px;
+  opacity: 0.6;
+}
+
+/* Responsive column strategy:
+   - Large: show title/artist/album/duration/plays/add
+   - Medium: hide plays (still available in subtitle if needed)
+   - Small: hide artist+album columns, show subtitle inside title
+   - Tiny: hide duration column, rely on subtitle
+*/
+
+@media (max-width: 1100px) {
+  .col-plays,
+  th.col-plays {
+    display: none;
+  }
+}
+
+@media (max-width: 900px) {
+  .col-artist,
+  th.col-artist,
+  .col-album,
+  th.col-album {
+    display: none;
+  }
+
+  .song-subtitle {
+    display: block;
+  }
+
+  /* Small screen: title + (artist/album/plays in subtitle), time stays on the right */
+  .col-title {
+    width: auto;
+  }
+}
+
+@media (max-width: 700px) {
+  .song-table td {
+    padding: 12px 12px;
+  }
+
+  .col-cover {
+    width: 56px;
+    padding: 10px 10px !important;
+  }
+
+  .song-cover {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+  }
+
+  /* Earlier ellipsis like the reference (without truncating desktop). */
+  .song-title-text {
+    max-width: min(56vw, 240px);
+  }
+
+  .song-subtitle {
+    max-width: min(56vw, 240px);
+  }
+
+  /* Phone: keep subtitle minimal (artist-only). */
+  .song-sub-sep,
+  .song-sub-album,
+  .song-sub-plays {
+    display: none;
+  }
+
+  /* No hover on touch; keep controls visible. */
+  .play-button {
+    opacity: 1;
+  }
+}
+
+@media (max-width: 520px) {
+  /* Always show time (duration) */
+  .col-duration,
+  th.col-duration {
+    display: table-cell;
+  }
+}
+
+.col-artist, .col-album {
+  width: 18%;
+  color: var(--text-secondary);
+}
+
+.col-album {
+  width: 22%;
 }
 
 .song-table-container {
@@ -115,24 +249,62 @@
 }
 
 .col-duration {
-  width: 80px;
+  width: 72px;
   color: var(--text-secondary);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
 }
 
 .col-plays {
-  width: 80px;
-  text-align: center;
+  width: 70px;
+  text-align: right;
   color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
 }
 
 .col-add {
-  width: 50px;
+  width: 44px;
   text-align: center;
 }
 
 .col-remove {
   width: 50px;
   text-align: center;
+}
+
+.col-drag {
+  width: 44px;
+  text-align: center;
+}
+
+.playlist-drag-handle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  color: var(--text-secondary);
+  cursor: grab;
+  user-select: none;
+}
+
+.playlist-drag-handle:hover {
+  background: var(--hover);
+  color: var(--text-primary);
+}
+
+.playlist-drag-handle:active {
+  cursor: grabbing;
+}
+
+#playlistDetailView tr.is-dragging {
+  opacity: 0.6;
+}
+
+#playlistDetailView tr.is-drag-over {
+  outline: 2px solid var(--primary);
+  outline-offset: -2px;
 }
 
 .play-button {
@@ -153,7 +325,7 @@
 }
 
 .play-button:hover {
-  background: rgba(29, 185, 84, 0.15);
+  background: rgba(122, 162, 255, 0.14);
   transform: scale(1.2);
 }
 

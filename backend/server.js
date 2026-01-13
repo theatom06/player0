@@ -524,7 +524,7 @@ app.post('/api/playlists', async (req, res) => {
  */
 app.put('/api/playlists/:id', async (req, res) => {
   try {
-    const { name, description, songIds } = req.body;
+    const { name, description, songIds, pinned } = req.body;
     const updates = {};
     
     if (name !== undefined) {
@@ -543,6 +543,13 @@ app.put('/api/playlists/:id', async (req, res) => {
         return res.status(400).json({ error: 'songIds must be an array' });
       }
       updates.songIds = songIds;
+    }
+
+    if (pinned !== undefined) {
+      if (typeof pinned !== 'boolean') {
+        return res.status(400).json({ error: 'pinned must be a boolean' });
+      }
+      updates.pinned = pinned;
     }
     
     const updated = await storage.updatePlaylist(req.params.id, updates);

@@ -14,6 +14,32 @@ export { API_URL };
 const CACHE_DURATION = 7 * 24 * 60 * 60 * 1000; // 1 week
 const cache = new Map();
 
+// Dev mode disables caching entirely.
+// Enable via any of:
+// - `window.__PLAYER0_DEV_MODE = true` (set before this module loads)
+// - URL query `?dev=1` (or `?dev=true`)
+// - localStorage key `player0.devMode` set to `"1"` or `"true"`
+// - hostname `localhost` / `127.0.0.1`
+function isDevMode() {
+    try {
+        if (window.__PLAYER0_DEV_MODE === true) return true;
+
+        const params = new URLSearchParams(window.location.search);
+        const devParam = params.get('dev');
+        if (devParam === '' || devParam === '1' || devParam === 'true') return true;
+
+        const ls = localStorage.getItem('player0.devMode');
+        if (ls === '1' || ls === 'true') return true;
+
+        const host = window.location.hostname;
+        if (host === 'localhost' || host === '127.0.0.1') return true;
+    } catch {
+        // ignore
+    }
+
+    return false;
+}
+
 function getCacheKey(endpoint) {
   return endpoint;
 }
@@ -40,6 +66,25 @@ function clearCache() {
 
 async function fetchWithCache(url, options = {}) {
   const cacheKey = getCacheKey(url);
+
+    // Dev mode: bypass in-memory cache and tell fetch to avoid HTTP cache.
+    if (isDevMode()) {
+        const headers = new Headers(options.headers || {});
+        headers.set('Cache-Control', 'no-cache');
+
+        const response = await fetch(url, {
+            ...options,
+            headers,
+            cache: 'no-store'
+        });
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.message || 'API request failed');
+        }
+
+        return data;
+    }
   
   // Check cache for GET requests only
   if (!options.method || options.method === 'GET') {
@@ -141,7 +186,9 @@ async function listAlbums() {
 
 async function getAlbumDetail(artist, album) {
     return await fetchWithCache(`${API_URL}/albums/${encodeURIComponent(artist)}/${encodeURIComponent(album)}`);
-}function albumCoverUrl(songId) {
+}
+
+function albumCoverUrl(songId) {
     return `${API_URL}/cover/${songId}`;
 }
 
@@ -151,7 +198,9 @@ async function getAlbumDetail(artist, album) {
 
 async function listArtists() {
     return await fetchWithCache(`${API_URL}/artists`);
-}// ============================================
+}
+
+// ============================================
 // Playlists APIs
 // ============================================
 
@@ -241,19 +290,31 @@ async function removeSongFromPlaylist(playlistId, songId) {
 // ============================================
 
 async function getStats() {
-    return await fetchWithCache(`${API_URL}/stats`);
-}// ============================================
+    // Stats change frequently (plays, recently played, listening time). Avoid long-lived caching.
+    const response = await fetch(`${API_URL}/stats`, { cache: 'no-store' });
+    const data = await response.json();
+
+    if (!response.ok) {
+        throw new Error(data.message || 'API request failed');
+    }
+
+    return data;
+}
+
+// ============================================
 // Library Management APIs
 // ============================================
 
 async function scanLibrary() {
     const response = await fetch(`${API_URL}/scan`, { method: 'POST' });
     const data = await response.json();
-    
-    if(!response.ok) {
-        throw new Error(data.message || 'Error scanning library');
+
+    if (!response.ok) {
+        throw new Error(data.error || data.message || 'Error scanning library');
     }
-    
+
+    // Scanning changes library data: clear cache.
+    clearCache();
     return data;
 }
 

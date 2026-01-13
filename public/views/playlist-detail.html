@@ -11,17 +11,35 @@
       <p id="playlistDetailDescription" style="margin: 4px 0 0 0; color: var(--text-secondary); font-size: 14px;"></p>
     </div>
   </div>
-  <button class="btn-primary" id="playPlaylistAll">
-    <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16" style="margin-right: 4px;">
-      <path d="M8 5v14l11-7z"/>
-    </svg>
-    Play All
-  </button>
+  <div class="view-controls">
+    <button class="btn-primary" id="playPlaylistAll" type="button">
+      <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16" style="margin-right: 4px;">
+        <path d="M8 5v14l11-7z"/>
+      </svg>
+      Play All
+    </button>
+
+    <div class="dropdown">
+      <button class="dropdown-trigger" type="button" data-dropdown-trigger aria-haspopup="menu" aria-expanded="false" aria-label="Playlist actions" title="Actions">
+        ⋯
+      </button>
+      <div class="dropdown-menu" role="menu">
+        <button class="dropdown-item" id="playlistShuffle" type="button" role="menuitem">Shuffle</button>
+        <div class="dropdown-sep" role="separator"></div>
+        <button class="dropdown-item" id="playlistExportM3U" type="button" role="menuitem">Export M3U</button>
+        <button class="dropdown-item" id="playlistExportPLS" type="button" role="menuitem">Export PLS</button>
+        <div class="dropdown-sep" role="separator"></div>
+        <button class="dropdown-item" id="playlistEdit" type="button" role="menuitem">Edit</button>
+        <button class="dropdown-item is-danger" id="playlistDelete" type="button" role="menuitem">Delete</button>
+      </div>
+    </div>
+  </div>
 </div>
 <div class="song-table-container">
   <table class="song-table">
     <thead>
       <tr>
+        <th class="col-drag"></th>
         <th class="col-play"></th>
         <th class="col-cover"></th>
         <th class="col-title">Title</th>

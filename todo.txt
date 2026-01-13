@@ -1,0 +1,11 @@
+[ ] Extras
+	[ ] Lyrics display
+	[ ] BPM detection / tagging
+	[ ] Mood playlists based on BPM and tone
+	[ ] Album-art derived colors
+	[ ] New music notifications after scans
+
+[ ] Fun
+	[ ] Music quiz game
+
+

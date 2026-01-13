@@ -1,6 +1,6 @@
 // UI Rendering Module
 import { formatDuration, escapeHtml } from './utils.js';
-import { API_URL, songCoverUrl, albumCoverUrl } from './API.js';
+import { API_URL, songCoverUrl, albumCoverUrl, updatePlaylist } from './API.js';
 
 /**
  * Renders the song list
@@ -17,7 +17,7 @@ export function renderSongs(songs, onPlaySong) {
   if (songs.length === 0) {
     tbody.innerHTML = `
     <tr>
-      <td colspan="7" class="empty-state">
+      <td colspan="8" class="empty-state">
         <div class="empty-state-content">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="64" height="64">
             <path d="M9 18V5l12-2v13M9 18l-5 1V6l5-1M9 18l5-1m0-13V6"/>
@@ -35,6 +35,10 @@ export function renderSongs(songs, onPlaySong) {
     const tr = document.createElement('tr');
     const albumTitle = song.album || 'Unknown Album';
     const truncatedAlbum = albumTitle.length > 30 ? albumTitle.substring(0, 30) + '...' : albumTitle;
+    const artistName = song.artist || 'Unknown Artist';
+    const playCount = song.playCount || 0;
+    const durationText = formatDuration(song.duration);
+    const copyText = `${song.title || 'Unknown'} — ${artistName}`;
     tr.innerHTML = `
       <td class="col-play">
         <button class="play-button" data-index="${index}">
@@ -46,23 +50,46 @@ export function renderSongs(songs, onPlaySong) {
       <td class="col-cover">
         <img class="song-cover" src="${songCoverUrl(song.id)}" alt="${escapeHtml(song.title || 'Unknown')}" onerror="this.style.display='none';" />
       </td>
-      <td class="col-title">${escapeHtml(song.title || 'Unknown')}</td>
-      <td class="col-artist">${escapeHtml(song.artist || 'Unknown Artist')}</td>
+      <td class="col-title">
+        <div class="song-title-row">
+          <div class="song-title-text">${escapeHtml(song.title || 'Unknown')}</div>
+          <div class="song-subtitle">
+            <span class="song-sub-artist">${escapeHtml(artistName)}</span>
+            <span class="song-sub-sep">•</span>
+            <span class="song-sub-album" title="${escapeHtml(albumTitle)}">${escapeHtml(truncatedAlbum)}</span>
+            <span class="song-sub-sep">•</span>
+            <span class="song-sub-plays">${playCount} plays</span>
+          </div>
+        </div>
+      </td>
+      <td class="col-artist">${escapeHtml(artistName)}</td>
       <td class="col-album" title="${escapeHtml(albumTitle)}">${escapeHtml(truncatedAlbum)}</td>
-      <td class="col-duration">${formatDuration(song.duration)}</td>
-      <td class="col-plays">${song.playCount || 0}</td>
+      <td class="col-duration">${escapeHtml(durationText)}</td>
+      <td class="col-plays">${playCount}</td>
       <td class="col-add">
-        <button class="add-to-playlist-btn" data-song-id="${song.id}" title="Add to Playlist">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
-            <line x1="12" y1="5" x2="12" y2="19"></line>
-            <line x1="5" y1="12" x2="19" y2="12"></line>
-          </svg>
-        </button>
+        <div class="dropdown">
+          <button class="dropdown-trigger is-compact" type="button" data-dropdown-trigger aria-haspopup="menu" aria-expanded="false" title="Song actions">
+            <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18" aria-hidden="true">
+              <circle cx="5" cy="12" r="1.8" />
+              <circle cx="12" cy="12" r="1.8" />
+              <circle cx="19" cy="12" r="1.8" />
+            </svg>
+          </button>
+          <div class="dropdown-menu" role="menu">
+            <button class="dropdown-item song-row-play-btn" type="button">Play</button>
+            <button class="dropdown-item song-row-play-next-btn" type="button" data-song-id="${song.id}" data-song-index="${index}" data-song-context="library">Play next</button>
+            <button class="dropdown-item song-row-queue-btn" type="button" data-song-id="${song.id}" data-song-index="${index}" data-song-context="library">Add to queue</button>
+            <div class="dropdown-sep" role="separator"></div>
+            <button class="dropdown-item add-to-playlist-btn" type="button" data-song-id="${song.id}">Add to playlist</button>
+            <button class="dropdown-item song-copy-btn" type="button" data-copy-text="${escapeHtml(copyText)}">Copy title + artist</button>
+          </div>
+        </div>
       </td>
     `;
     
     // Add event listeners
     tr.querySelector('.play-button').addEventListener('click', () => onPlaySong(index));
+    tr.querySelector('.song-row-play-btn')?.addEventListener('click', () => onPlaySong(index));
     tr.addEventListener('dblclick', () => onPlaySong(index));
     
     tbody.appendChild(tr);
@@ -223,10 +250,17 @@ export function renderPlaylists(playlists) {
     return;
   }
   
-  playlists.forEach(playlist => {
+  (playlists || []).forEach(playlist => {
     const card = document.createElement('div');
     card.className = 'playlist-card';
+    card.dataset.playlistId = playlist.id;
+    card.dataset.pinned = playlist.pinned ? '1' : '0';
     card.innerHTML = `
+      <button class="playlist-pin-btn" type="button" data-playlist-id="${playlist.id}" data-pinned="${playlist.pinned ? '1' : '0'}" aria-label="${playlist.pinned ? 'Unpin playlist' : 'Pin playlist'}" title="${playlist.pinned ? 'Pinned' : 'Pin'}">
+        <svg viewBox="0 0 24 24" fill="${playlist.pinned ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2" width="18" height="18">
+          <path d="M12 17l-5 3 1.5-5.5L4 10.5l5.7-.4L12 5l2.3 5.1 5.7.4-4.5 4 1.5 5.5z"/>
+        </svg>
+      </button>
       <div class="playlist-cover">
         <svg viewBox="0 0 24 24" fill="currentColor" width="48" height="48">
           <path d="M15 6H3v2h12V6zm0 4H3v2h12v-2zM3 16h8v-2H3v2zM17 6v8.18c-.31-.11-.65-.18-1-.18-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3V8h3V6h-5z"/>
@@ -274,6 +308,7 @@ export function renderStats(stats) {
   const PREVIEW_COUNT = 5;
   const mostPlayedPreview = (stats.mostPlayed || []).slice(0, PREVIEW_COUNT);
   const recentlyPlayedPreview = (stats.recentlyPlayed || []).slice(0, PREVIEW_COUNT);
+  const listeningTimeLabel = formatDurationLong(stats.totalListeningTime || 0);
 
   layout.innerHTML = `
     <div class="stat-tile tile-most" role="button" tabindex="0" aria-label="Most Played Songs" data-stats-action="modal" data-stats-modal="mostPlayed">
@@ -346,7 +381,7 @@ export function renderStats(stats) {
         <div class="stat-tile-title">Totals</div>
         <div class="stat-tile-value">${stats.totalPlays || 0}</div>
       </div>
-      <div class="stat-tile-hint">${escapeHtml(formatDuration(stats.totalDuration || 0))} • open details</div>
+      <div class="stat-tile-hint">Listening: ${escapeHtml(listeningTimeLabel)} • ${escapeHtml(formatDuration(stats.totalDuration || 0))} library • open details</div>
     </div>
 
     <div class="stat-tile tile-recent" role="button" tabindex="0" aria-label="Recently Played" data-stats-action="modal" data-stats-modal="recentlyPlayed">
@@ -379,6 +414,21 @@ export function renderStats(stats) {
   `;
 }
 
+function formatDurationLong(seconds) {
+  const totalSeconds = Number(seconds);
+  if (!Number.isFinite(totalSeconds) || totalSeconds <= 0) return '0m';
+
+  const totalMinutes = Math.floor(totalSeconds / 60);
+  const mins = totalMinutes % 60;
+  const totalHours = Math.floor(totalMinutes / 60);
+  const hours = totalHours % 24;
+  const days = Math.floor(totalHours / 24);
+
+  if (days > 0) return `${days}d ${hours}h`;
+  if (totalHours > 0) return `${totalHours}h ${mins}m`;
+  return `${totalMinutes}m`;
+}
+
 function getTimeAgo(date) {
   const seconds = Math.floor((new Date() - date) / 1000);
   if (seconds < 60) return 'Just now';
@@ -399,7 +449,9 @@ export function renderPlaylistDetail(playlist, songs) {
   
   // Set playlist info
   nameEl.textContent = playlist.name || 'Untitled Playlist';
-  descEl.textContent = playlist.description || `${songs.length} songs`;
+  const songCountLabel = `${(songs || []).length} songs`;
+  const desc = String(playlist.description || '').trim();
+  descEl.textContent = desc ? `${desc} • ${songCountLabel}` : songCountLabel;
   
   // Clear table
   tbody.innerHTML = '';
@@ -408,7 +460,7 @@ export function renderPlaylistDetail(playlist, songs) {
   if (!songs || songs.length === 0) {
     tbody.innerHTML = `
       <tr>
-        <td colspan="7" class="empty-state">
+        <td colspan="8" class="empty-state">
           <div class="empty-state-content">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="64" height="64">
               <path d="M9 18V5l12-2v13"/>
@@ -428,8 +480,13 @@ export function renderPlaylistDetail(playlist, songs) {
     const tr = document.createElement('tr');
     const albumTitle = song.album || 'Unknown Album';
     const truncatedAlbum = albumTitle.length > 30 ? albumTitle.substring(0, 30) + '...' : albumTitle;
+    const artistName = song.artist || 'Unknown Artist';
+    const copyText = `${song.title || 'Unknown'} — ${artistName}`;
     
     tr.innerHTML = `
+      <td class="col-drag">
+        <span class="playlist-drag-handle" draggable="true" aria-label="Drag to reorder">⋮⋮</span>
+      </td>
       <td class="col-play">
         <button class="play-button" data-index="${index}">
           <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
@@ -441,16 +498,29 @@ export function renderPlaylistDetail(playlist, songs) {
         <img class="song-cover" src="${songCoverUrl(song.id)}" alt="${escapeHtml(song.title || 'Unknown')}" onerror="this.style.display='none';" />
       </td>
       <td class="col-title">${escapeHtml(song.title || 'Unknown')}</td>
-      <td class="col-artist">${escapeHtml(song.artist || 'Unknown Artist')}</td>
+      <td class="col-artist">${escapeHtml(artistName)}</td>
       <td class="col-album" title="${escapeHtml(albumTitle)}">${escapeHtml(truncatedAlbum)}</td>
       <td class="col-duration">${formatDuration(song.duration)}</td>
       <td class="col-remove">
-        <button class="remove-from-playlist-btn" data-song-id="${song.id}" title="Remove from playlist">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
-            <line x1="18" y1="6" x2="6" y2="18"/>
-            <line x1="6" y1="6" x2="18" y2="18"/>
-          </svg>
-        </button>
+        <div class="dropdown">
+          <button class="dropdown-trigger is-compact" type="button" data-dropdown-trigger aria-haspopup="menu" aria-expanded="false" title="Song actions">
+            <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18" aria-hidden="true">
+              <circle cx="5" cy="12" r="1.8" />
+              <circle cx="12" cy="12" r="1.8" />
+              <circle cx="19" cy="12" r="1.8" />
+            </svg>
+          </button>
+          <div class="dropdown-menu" role="menu">
+            <button class="dropdown-item song-row-play-btn" type="button">Play</button>
+            <button class="dropdown-item song-row-play-next-btn" type="button" data-song-id="${song.id}" data-song-index="${index}" data-song-context="playlist">Play next</button>
+            <button class="dropdown-item song-row-queue-btn" type="button" data-song-id="${song.id}" data-song-index="${index}" data-song-context="playlist">Add to queue</button>
+            <div class="dropdown-sep" role="separator"></div>
+            <button class="dropdown-item add-to-playlist-btn" type="button" data-song-id="${song.id}">Add to playlist</button>
+            <button class="dropdown-item song-copy-btn" type="button" data-copy-text="${escapeHtml(copyText)}">Copy title + artist</button>
+            <div class="dropdown-sep" role="separator"></div>
+            <button class="dropdown-item is-danger remove-from-playlist-btn" type="button" data-song-id="${song.id}">Remove from playlist</button>
+          </div>
+        </div>
       </td>
     `;
     
@@ -464,6 +534,109 @@ export function renderPlaylistDetail(playlist, songs) {
       const index = parseInt(btn.dataset.index);
       if (window.onPlaySongFromPlaylist) {
         window.onPlaySongFromPlaylist(songs, index);
+      }
+    });
+  });
+
+  tbody.querySelectorAll('.song-row-play-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const row = btn.closest('tr');
+      const playBtn = row?.querySelector?.('.play-button');
+      const index = parseInt(playBtn?.dataset?.index);
+      if (!Number.isFinite(index)) return;
+      if (window.onPlaySongFromPlaylist) {
+        window.onPlaySongFromPlaylist(songs, index);
+      }
+    });
+  });
+
+  // Drag-and-drop reordering (handle-only)
+  let draggingIndex = null;
+
+  function computeDropToIndex(fromIndex, targetIndex, placeAfter) {
+    let to = targetIndex + (placeAfter ? 1 : 0);
+    if (fromIndex < to) to -= 1;
+    return to;
+  }
+
+  function buildSongIdsFromSongs(list) {
+    return list.map(s => s.id).filter(Boolean);
+  }
+
+  tbody.querySelectorAll('tr').forEach((row, rowIndex) => {
+    const handle = row.querySelector('.playlist-drag-handle');
+    if (!handle) return;
+
+    handle.addEventListener('dragstart', (event) => {
+      draggingIndex = rowIndex;
+      row.classList.add('is-dragging');
+      if (event.dataTransfer) {
+        event.dataTransfer.effectAllowed = 'move';
+        event.dataTransfer.setData('text/plain', String(rowIndex));
+      }
+    });
+
+    handle.addEventListener('dragend', () => {
+      draggingIndex = null;
+      tbody.querySelectorAll('tr.is-dragging').forEach(el => el.classList.remove('is-dragging'));
+      tbody.querySelectorAll('tr.is-drag-over').forEach(el => el.classList.remove('is-drag-over'));
+    });
+
+    row.addEventListener('dragover', (event) => {
+      if (draggingIndex == null) return;
+      event.preventDefault();
+      tbody.querySelectorAll('tr.is-drag-over').forEach(el => {
+        if (el !== row) el.classList.remove('is-drag-over');
+      });
+      row.classList.add('is-drag-over');
+    });
+
+    row.addEventListener('dragleave', () => {
+      row.classList.remove('is-drag-over');
+    });
+
+    row.addEventListener('drop', async (event) => {
+      event.preventDefault();
+
+      let from = draggingIndex;
+      if (from == null) {
+        const raw = event.dataTransfer?.getData('text/plain');
+        const num = Number(raw);
+        from = Number.isFinite(num) ? Math.trunc(num) : null;
+      }
+      if (from == null) return;
+
+      const toTarget = rowIndex;
+      const rect = row.getBoundingClientRect();
+      const placeAfter = (event.clientY - rect.top) > rect.height / 2;
+      const to = computeDropToIndex(from, toTarget, placeAfter);
+
+      row.classList.remove('is-drag-over');
+      if (from === to) return;
+
+      const nextSongs = [...songs];
+      const [moved] = nextSongs.splice(from, 1);
+      nextSongs.splice(to, 0, moved);
+
+      const nextSongIds = buildSongIdsFromSongs(nextSongs);
+
+      // Update globals used elsewhere in the app.
+      if (window.currentPlaylistId === playlist.id) {
+        window.currentPlaylistSongs = nextSongs;
+      }
+
+      // Optimistically re-render, then persist.
+      renderPlaylistDetail({ ...playlist, songIds: nextSongIds }, nextSongs);
+
+      try {
+        await updatePlaylist(playlist.id, { songIds: nextSongIds });
+      } catch (error) {
+        console.error('Failed to persist playlist order:', error);
+        // Reload to recover correct state.
+        if (window.loadPlaylistDetail) {
+          await window.loadPlaylistDetail(playlist.id);
+        }
       }
     });
   });

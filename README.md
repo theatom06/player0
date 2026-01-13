@@ -1,6 +1,15 @@
 # Player 0
+[![Hackatime](https://hackatime-badge.hackclub.com/U05J8AF58S1/player0)](https://hackatime-badge.hackclub.com/U05J8AF58S1/player0)
 
 Simple web-based music player.
+
+## Features
+
+- Shuffle + repeat (off / all / one)
+- Search + discovery shortcuts (not played recently, low play count)
+- Playlists (create/edit/delete, drag-reorder, pin, import/export)
+- Per-item action menus (⋯ dropdowns) to keep the UI clean
+- Mobile-first layout + responsive library table
 
 ## Quick start
 
@@ -12,23 +21,24 @@ From the repository root:
 
 Then open `http://localhost:3000`.
 
+Tip: edit `backend/config.json` to point at your music directories.
+
 ## Docs
 
-- Backend docs: backend/README.md
-- Frontend docs: public/README.md
-- API configuration: backend/API_CONFIG.md
-- Style guide: STYLE_GUIDE.md
+- Backend docs: `backend/README.md`
+- Frontend docs: `public/README.md`
+- API configuration: `backend/API_CONFIG.md`
+- Style guide: `STYLE_GUIDE.md`
 
 ## New Ideas
 
 ### Playback & controls
 - Shuffle / repeat modes
-- Queue management (view, reorder, clear)
 - Sleep timer (stop after N minutes)
 - Mobile-friendly layout and touch controls
 
 ### Playlists & library
-- Drag-and-drop reordering
+- Playlist drag-and-drop reordering
 - Smart playlists (rule-based auto playlists)
 - Pin favorites
 - Import / export playlists and settings (M3U, PLS, JSON)
@@ -63,41 +73,17 @@ Then open `http://localhost:3000`.
 
 ## Tech Stack
 
-- **Backend**: Bun.js with Express and SQLite
-- **Frontend**: Plain HTML, CSS, and JavaScript
-- **Audio**: music-metadata for tag extraction, HTTP streaming
-- **Database**: better-sqlite3 for music metadata
-
-## Setup
-
-### Install dependencies
-
-```bash
-bun install
-# or with bun
-bun install
-```
-
-### Run the server
-
-```bash
-bun start
-# or with bun
-bun run start
-```
+- **Backend**: Bun + Express + JSON file storage
+- **Frontend**: plain HTML/CSS/JS (ES modules)
+- **Audio**: `music-metadata` tag parsing + HTTP streaming
 
 ## Configuration
 
-Edit `config.json` to set your music directories.
-
-You can specify multiple directories as an array:
+Edit `backend/config.json`:
 
 ```json
 {
-  "musicDirectories": ["/path/to/your/music1", "/path/to/your/music2"]
+  "musicDirectories": ["/path/to/your/music"],
+  "port": 3000
 }
 ```
-
-## Default Port
-
-Server runs on http://localhost:3000

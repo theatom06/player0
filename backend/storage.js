@@ -179,6 +179,7 @@ class Storage {
       id: p.id,
       name: p.name,
       description: p.description || '',
+      pinned: Boolean(p.pinned),
       songIds: Array.isArray(p.songIds) ? p.songIds : (Array.isArray(p.songs) ? p.songs : []),
       songCount: Array.isArray(p.songIds) ? p.songIds.length : (Array.isArray(p.songs) ? p.songs.length : 0),
       createdDate: p.createdDate || new Date().toISOString(),
@@ -216,6 +217,7 @@ class Storage {
       id: `pl_${Date.now()}`,
       name: data.name,
       description: data.description || '',
+      pinned: Boolean(data.pinned),
       songIds: Array.isArray(data.songIds) ? data.songIds : [],
       songCount: Array.isArray(data.songIds) ? data.songIds.length : 0,
       createdDate: new Date().toISOString(),
@@ -343,6 +345,14 @@ class Storage {
     const totalSongs = songs.length;
     const totalDuration = songs.reduce((sum, song) => sum + (song.duration || 0), 0);
     const totalPlays = songs.reduce((sum, song) => sum + (song.playCount || 0), 0);
+
+    // Approximate total listening time from play counts.
+    // (durationPlayed is not consistently recorded by all clients)
+    const totalListeningTime = songs.reduce((sum, song) => {
+      const plays = song.playCount || 0;
+      const duration = song.duration || 0;
+      return sum + (plays * duration);
+    }, 0);
     
     // Get unique counts
     const artists = new Set(songs.map(s => s.artist).filter(Boolean));
@@ -353,6 +363,69 @@ class Storage {
     const mostPlayed = [...songs]
       .sort((a, b) => (b.playCount || 0) - (a.playCount || 0))
       .slice(0, 10);
+
+    // Album report (top 20)
+    const albumMap = new Map();
+    songs.forEach(song => {
+      const album = song.album || 'Unknown Album';
+      const artist = song.albumArtist || song.artist || 'Unknown Artist';
+      const key = `${album}|||${artist}`;
+      const plays = song.playCount || 0;
+      const duration = song.duration || 0;
+
+      if (!albumMap.has(key)) {
+        albumMap.set(key, {
+          album,
+          artist,
+          tracks: 0,
+          totalPlays: 0,
+          totalDuration: 0,
+          listeningTime: 0
+        });
+      }
+      const entry = albumMap.get(key);
+      entry.tracks += 1;
+      entry.totalPlays += plays;
+      entry.totalDuration += duration;
+      entry.listeningTime += plays * duration;
+    });
+
+    const albumReport = Array.from(albumMap.values())
+      .sort((a, b) => {
+        if (b.listeningTime !== a.listeningTime) return b.listeningTime - a.listeningTime;
+        if (b.totalPlays !== a.totalPlays) return b.totalPlays - a.totalPlays;
+        return String(a.album).localeCompare(String(b.album));
+      })
+      .slice(0, 20);
+
+    // Genre report (top 20)
+    const genreMap = new Map();
+    songs.forEach(song => {
+      const genre = song.genre || 'Unknown';
+      const plays = song.playCount || 0;
+      const duration = song.duration || 0;
+
+      if (!genreMap.has(genre)) {
+        genreMap.set(genre, {
+          genre,
+          songs: 0,
+          totalPlays: 0,
+          listeningTime: 0
+        });
+      }
+      const entry = genreMap.get(genre);
+      entry.songs += 1;
+      entry.totalPlays += plays;
+      entry.listeningTime += plays * duration;
+    });
+
+    const genreReport = Array.from(genreMap.values())
+      .sort((a, b) => {
+        if (b.listeningTime !== a.listeningTime) return b.listeningTime - a.listeningTime;
+        if (b.totalPlays !== a.totalPlays) return b.totalPlays - a.totalPlays;
+        return String(a.genre).localeCompare(String(b.genre));
+      })
+      .slice(0, 20);
     
     // Recently played - enrich with song data
     const recentPlays = history.slice(-10).reverse();
@@ -369,13 +442,16 @@ class Storage {
     return {
       totalSongs,
       totalDuration,
+      totalListeningTime,
       totalPlays,
       totalPlaylists: playlists.length,
       uniqueArtists: artists.size,
       uniqueAlbums: albums.size,
       uniqueGenres: genres.size,
       mostPlayed,
-      recentlyPlayed
+      recentlyPlayed,
+      albumReport,
+      genreReport
     };
   }
 }

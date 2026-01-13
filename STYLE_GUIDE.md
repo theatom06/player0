@@ -32,6 +32,7 @@ public/
     player.js    - Audio player logic (< 400 lines)
     ui.js        - DOM rendering (< 800 lines, split if needed)
     utils.js     - Helper functions (< 300 lines)
+    app/          - Feature modules (routing, playlists, dropdowns, etc.)
   css/
     base.css       - Variables, reset (< 200 lines)
     sidebar.css    - Navigation (< 200 lines)
@@ -40,6 +41,10 @@ public/
     views.css      - View layouts (< 400 lines)
     player.css     - Audio controls (< 300 lines)
     components.css - Reusable UI (< 400 lines)
+
+  Notable shared UI components:
+
+  - Dropdown menus: `public/js/app/dropdowns.js` + `public/css/components.css`
 ```
 
 ### Responsibilities
@@ -249,6 +254,28 @@ if (songs.length === 0) {
 - Keep under 300ms for UI feedback
 - Use cubic-bezier for natural motion
 - Only animate `transform` and `opacity`
+
+---
+
+## Reusable Components
+
+### Dropdown menus (⋯)
+
+Use the shared dropdown behavior instead of ad-hoc menus:
+
+- Behavior: `public/js/app/dropdowns.js`
+- Styles: `public/css/components.css`
+
+Prefer delegated click handlers (document-level) for dropdown items because views are injected dynamically.
+
+### Song row actions
+
+For per-song actions (Library / Playlist Detail), prefer putting actions behind a dropdown to keep tables readable on mobile.
+
+Queue mutations should go through state helpers:
+
+- `enqueueSongs()` (append to end)
+- `playNextSongs()` (insert after current)
 
 ---
 

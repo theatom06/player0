@@ -1,0 +1,103 @@
+<div class="view-header">
+  <h2>Settings</h2>
+</div>
+
+<div class="settings-section">
+  <div class="settings-section-header">
+    <h3>Exports</h3>
+    <p>Download your library statistics for backup or analysis.</p>
+  </div>
+
+  <div class="settings-action-card">
+    <div class="settings-action-text">
+      <div class="settings-action-title">Library stats</div>
+      <div class="settings-action-desc">Exports listening stats as a CSV file.</div>
+    </div>
+    <div class="settings-action-controls">
+      <button class="btn-primary" id="exportStatsCsvButton" type="button">Export CSV</button>
+    </div>
+  </div>
+</div>
+
+<div class="settings-section">
+  <div class="settings-section-header">
+    <h3>Playlists Import/Export</h3>
+    <p>Backup playlists, restore them later, or import from standard playlist files.</p>
+  </div>
+
+  <div class="settings-action-grid">
+    <div class="settings-action-card">
+      <div class="settings-action-text">
+        <div class="settings-action-title">Import playlists (JSON)</div>
+        <div class="settings-action-desc">Loads playlists from a JSON file.</div>
+      </div>
+      <div class="settings-action-controls">
+        <div class="dropdown">
+          <button class="dropdown-trigger" type="button" data-dropdown-trigger aria-haspopup="menu" aria-expanded="false" aria-label="Import playlists actions">
+            ⋯
+          </button>
+          <div class="dropdown-menu" role="menu">
+            <button class="dropdown-item" id="settingsImportPlaylistsJson" type="button" role="menuitem">Import JSON</button>
+          </div>
+        </div>
+        <input id="settingsPlaylistsJsonFile" type="file" accept="application/json" style="display:none" />
+      </div>
+    </div>
+
+    <div class="settings-action-card">
+      <div class="settings-action-text">
+        <div class="settings-action-title">Export playlists + settings (JSON)</div>
+        <div class="settings-action-desc">Downloads playlists plus your <span class="settings-mono">player0.*</span> settings.</div>
+      </div>
+      <div class="settings-action-controls">
+        <div class="dropdown">
+          <button class="dropdown-trigger" type="button" data-dropdown-trigger aria-haspopup="menu" aria-expanded="false" aria-label="Export playlists JSON actions">
+            ⋯
+          </button>
+          <div class="dropdown-menu" role="menu">
+            <button class="dropdown-item" id="settingsExportPlaylistsJson" type="button" role="menuitem">Export JSON</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="settings-action-card settings-action-card--wide">
+      <div class="settings-action-text">
+        <div class="settings-action-title">Import playlists (M3U/PLS)</div>
+        <div class="settings-action-desc">Imports a .m3u/.m3u8/.pls file into a new playlist.</div>
+      </div>
+      <div class="settings-action-controls">
+        <div class="dropdown">
+          <button class="dropdown-trigger" type="button" data-dropdown-trigger aria-haspopup="menu" aria-expanded="false" aria-label="Import M3U/PLS actions">
+            ⋯
+          </button>
+          <div class="dropdown-menu" role="menu">
+            <button class="dropdown-item" id="settingsImportPlaylistsM3uPls" type="button" role="menuitem">Import M3U/PLS</button>
+          </div>
+        </div>
+        <input id="settingsPlaylistsM3uPlsFile" type="file" accept=".m3u,.m3u8,.pls" style="display:none" />
+      </div>
+    </div>
+
+    <div class="settings-action-card settings-action-card--wide">
+      <div class="settings-action-text">
+        <div class="settings-action-title">Export a playlist (M3U/PLS)</div>
+        <div class="settings-action-desc">Choose a playlist and download it as a standard playlist file.</div>
+      </div>
+      <div class="settings-action-controls settings-action-controls--stack">
+        <div class="settings-export-row">
+          <select id="settingsPlaylistExportSelect" class="settings-select"></select>
+          <div class="dropdown">
+            <button class="dropdown-trigger" type="button" data-dropdown-trigger aria-haspopup="menu" aria-expanded="false" aria-label="Export playlist actions">
+              Export
+            </button>
+            <div class="dropdown-menu" role="menu">
+              <button class="dropdown-item" id="settingsExportPlaylistM3U" type="button" role="menuitem">Export M3U</button>
+              <button class="dropdown-item" id="settingsExportPlaylistPLS" type="button" role="menuitem">Export PLS</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
