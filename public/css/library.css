@@ -4,13 +4,15 @@
   background: var(--surface-1);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
-  overflow: hidden;
+  overflow: visible;
 }
 
 .song-table table {
   width: 100%;
   border-collapse: collapse;
   table-layout: fixed;
+  border-radius: var(--radius-md);
+  overflow: hidden;
 }
 
 .song-table thead {
@@ -30,6 +32,7 @@
 
 .song-table tbody tr {
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  position: relative;
 }
 
 .song-table tbody tr:last-child {
@@ -38,8 +41,6 @@
 
 .song-table tbody tr:hover {
   background: rgba(255, 255, 255, 0.03);
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-1);
 }
 
 .song-table td {
@@ -263,8 +264,18 @@
 }
 
 .col-add {
-  width: 44px;
+  width: 52px;
   text-align: center;
+  overflow: visible;
+  position: static;
+}
+
+.col-add .dropdown {
+  position: static;
+}
+
+.col-add .dropdown-menu {
+  /* Override relative positioning - let positionMenu handle it */
 }
 
 .col-remove {
@@ -346,3 +357,27 @@
 #playlistDetailView .song-table .play-button:hover {
   opacity: 1;
 }
+
+/* Lazy Loading Styles */
+img.lazy {
+  opacity: 0;
+  transition: opacity 0.3s ease-in-out;
+  background: var(--bg-light);
+}
+
+img.lazy.loaded,
+img.loaded {
+  opacity: 1;
+}
+
+.song-cover.lazy,
+.album-artwork.lazy {
+  background: linear-gradient(135deg, var(--bg-light) 0%, var(--bg-dark) 100%);
+}
+
+/* Hide broken images gracefully */
+img[src=""],
+img:not([src]) {
+  display: none;
+}
+

@@ -57,6 +57,19 @@ export async function loadAlbumDetail(artist, album) {
         window.location.hash = '#/albums';
       };
     }
+    
+    // Render similar songs if we have the first song
+    if (currentAlbumSongs.length > 0) {
+      try {
+        const { renderSimilarSongs } = await import('./enhancements.js');
+        const container = document.getElementById('similarSongsContainer');
+        if (container) {
+          renderSimilarSongs(currentAlbumSongs[0], container);
+        }
+      } catch (err) {
+        console.log('Could not load similar songs:', err);
+      }
+    }
   } catch (error) {
     console.error('Error loading album detail:', error);
   }

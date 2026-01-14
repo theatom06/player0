@@ -15,6 +15,13 @@ export async function initRouter() {
         await loadPlaylistDetail(parts[1]);
       } else if (view === 'album' && parts[1] && parts[2]) {
         await loadAlbumDetail(decodeURIComponent(parts[1]), decodeURIComponent(parts[2]));
+      } else if (view === 'artist' && parts[1]) {
+        const artistName = decodeURIComponent(parts[1]);
+        const searchInput = document.getElementById('searchInput');
+        if (searchInput) searchInput.value = artistName;
+        await switchView('library', false);
+        const { performSearch } = await import('./search.js');
+        await performSearch();
       } else {
         await switchView(view, false);
       }

@@ -7,19 +7,53 @@ Simple web-based music player.
 
 - Shuffle + repeat (off / all / one)
 - Search + discovery shortcuts (not played recently, low play count)
+- **Search autocomplete** with suggestions for artists, albums, songs, and genres
 - Playlists (create/edit/delete, drag-reorder, pin, import/export)
 - Per-item action menus (⋯ dropdowns) to keep the UI clean
 - Mobile-first layout + responsive library table
+- **Offline support** via service worker
+- **Lazy loading** for album artwork
+
+### UI Enhancements
+
+- **Album art blur background** - Blurred album art behind the player for ambient visuals
+- **Dynamic colors** - UI colors extracted from album art for cohesive theming
+- **Smooth transitions** - Animated view changes and staggered item animations
+- **Context menus** - Right-click on songs for quick actions (desktop), bottom sheet (mobile)
+- **Search filter pills** - Active search filters shown as removable chips
+- **Similar songs** - Song recommendations based on artist/genre/album
+- **Activity heatmap** - GitHub-style listening activity visualization in stats
+- **Top cards** - Visual cards for top artists/albums in stats
+- **Mini player** - Compact player with progress and controls
+- **Swipe gestures** - Swipe left/right on mobile to skip tracks
+- **Improved queue** - Better drag-to-reorder with visual feedback
+- **Toast notifications** - Non-intrusive feedback messages
 
 ## Quick start
 
 From the repository root:
 
-- Install backend deps: `bun install --cwd backend`
-- Start backend: `bun run --cwd backend start`
-- Scan music: `bun run --cwd backend scan`
+```bash
+# Install backend deps
+bun install --cwd backend
+
+# Start backend
+bun run --cwd backend start
+
+# Scan music
+bun run --cwd backend scan
+```
 
 Then open `http://localhost:3000`.
+
+### Production build
+
+```bash
+# Build optimized assets (minified CSS/JS)
+bun run --cwd backend build
+```
+
+Output is in `/dist` with minified CSS, bundled JS, and optimized HTML.
 
 Tip: edit `backend/config.json` to point at your music directories.
 
@@ -76,6 +110,7 @@ Tip: edit `backend/config.json` to point at your music directories.
 - **Backend**: Bun + Express + JSON file storage
 - **Frontend**: plain HTML/CSS/JS (ES modules)
 - **Audio**: `music-metadata` tag parsing + HTTP streaming
+- **Performance**: Service worker caching, lazy loading, build optimization
 
 ## Configuration
 

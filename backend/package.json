@@ -7,7 +7,9 @@
   "scripts": {
     "start": "bun server.js",
     "dev": "bun --watch server.js",
-    "scan": "bun scanner.js"
+    "scan": "bun scanner.js",
+    "build": "cd ../public && bun build app.js --outdir=../dist --minify --target=browser --sourcemap=external",
+    "build:full": "bun build.js"
   },
   "keywords": ["music", "player", "server", "raspberry-pi"],
   "author": "",

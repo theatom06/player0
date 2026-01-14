@@ -426,6 +426,35 @@ class Storage {
         return String(a.genre).localeCompare(String(b.genre));
       })
       .slice(0, 20);
+
+    // Artist report (top 20)
+    const artistMap = new Map();
+    songs.forEach(song => {
+      const artist = song.artist || 'Unknown Artist';
+      const plays = song.playCount || 0;
+      const duration = song.duration || 0;
+
+      if (!artistMap.has(artist)) {
+        artistMap.set(artist, {
+          artist,
+          songs: 0,
+          totalPlays: 0,
+          listeningTime: 0
+        });
+      }
+      const entry = artistMap.get(artist);
+      entry.songs += 1;
+      entry.totalPlays += plays;
+      entry.listeningTime += plays * duration;
+    });
+
+    const artistReport = Array.from(artistMap.values())
+      .sort((a, b) => {
+        if (b.listeningTime !== a.listeningTime) return b.listeningTime - a.listeningTime;
+        if (b.totalPlays !== a.totalPlays) return b.totalPlays - a.totalPlays;
+        return String(a.artist).localeCompare(String(b.artist));
+      })
+      .slice(0, 20);
     
     // Recently played - enrich with song data
     const recentPlays = history.slice(-10).reverse();
@@ -451,7 +480,8 @@ class Storage {
       mostPlayed,
       recentlyPlayed,
       albumReport,
-      genreReport
+      genreReport,
+      artistReport
     };
   }
 }

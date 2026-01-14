@@ -356,3 +356,18 @@ export function playNextSongs(songs) {
   const insertAt = playbackIndex >= 0 ? playbackIndex + 1 : playbackList.length;
   playbackList.splice(insertAt, 0, ...toAdd);
 }
+
+/**
+ * Global state accessor for external modules
+ * @type {Object}
+ */
+export const AppState = {
+  get allSongs() { return allSongs; },
+  get currentSongs() { return currentSongs; },
+  get playbackList() { return playbackList; },
+  get playbackIndex() { return playbackIndex; },
+  get isPlaying() { return isPlaying; },
+  get isShuffleEnabled() { return isShuffleEnabled; },
+  get repeatMode() { return repeatMode; },
+  get library() { return { songs: allSongs }; }
+};

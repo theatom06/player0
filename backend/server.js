@@ -27,6 +27,7 @@ import { fileURLToPath } from 'url';
 import fs from 'fs';
 import Storage from './storage.js';
 import MusicScanner from './scanner.js';
+import logger, { httpLogger, rateLimiter } from './logger.js';
 import configData from './config.json' with { type: 'json' };
 
 // ESM __dirname equivalent
@@ -70,6 +71,23 @@ app.use(cors({
  */
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+/**
+ * HTTP Request Logging
+ * Logs all incoming requests with timing information
+ */
+app.use(httpLogger);
+
+/**
+ * Rate Limiting
+ * Prevents abuse by limiting requests per IP
+ * Default: 200 requests per minute
+ */
+app.use('/api', rateLimiter({ 
+  windowMs: 60 * 1000, 
+  max: 200,
+  message: 'Too many API requests, please try again later'
+}));
 
 /**
  * MIME Type Middleware
@@ -201,6 +219,115 @@ app.get('/api/search', async (req, res) => {
     
     res.json(songs);
   } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * GET /api/suggestions
+ * Get search suggestions/autocomplete based on partial query
+ * Returns unique artists, albums, and song titles matching the query
+ * @query {string} q - Partial search query (min 2 chars)
+ * @query {number} limit - Max suggestions per category (default: 5)
+ * @returns {Object} Categorized suggestions { artists, albums, songs, genres }
+ */
+app.get('/api/suggestions', async (req, res) => {
+  try {
+    const { q, limit = 5 } = req.query;
+    
+    // Validate query
+    if (!q || typeof q !== 'string' || q.length < 2) {
+      return res.json({ artists: [], albums: [], songs: [], genres: [] });
+    }
+    
+    if (q.length > 100) {
+      return res.status(400).json({ error: 'Query too long' });
+    }
+    
+    const maxLimit = Math.min(parseInt(limit) || 5, 20);
+    const query = q.toLowerCase().trim();
+    const songs = await storage.getSongs();
+    
+    // Collect unique matches with relevance scoring
+    const artistSet = new Map();
+    const albumSet = new Map();
+    const songSet = new Map();
+    const genreSet = new Map();
+    
+    for (const song of songs) {
+      // Score artists
+      if (song.artist) {
+        const artist = song.artist;
+        const artistLower = artist.toLowerCase();
+        if (artistLower.includes(query)) {
+          const score = artistLower.startsWith(query) ? 100 : artistLower.indexOf(query) === 0 ? 90 : 50;
+          if (!artistSet.has(artist) || artistSet.get(artist).score < score) {
+            artistSet.set(artist, { value: artist, score, type: 'artist' });
+          }
+        }
+      }
+      
+      // Score albums
+      if (song.album) {
+        const album = song.album;
+        const albumLower = album.toLowerCase();
+        if (albumLower.includes(query)) {
+          const score = albumLower.startsWith(query) ? 100 : 50;
+          const key = `${album}|${song.artist || ''}`;
+          if (!albumSet.has(key) || albumSet.get(key).score < score) {
+            albumSet.set(key, { 
+              value: album, 
+              artist: song.albumArtist || song.artist,
+              score, 
+              type: 'album' 
+            });
+          }
+        }
+      }
+      
+      // Score song titles
+      if (song.title) {
+        const title = song.title;
+        const titleLower = title.toLowerCase();
+        if (titleLower.includes(query)) {
+          const score = titleLower.startsWith(query) ? 100 : 50;
+          if (!songSet.has(song.id) || songSet.get(song.id).score < score) {
+            songSet.set(song.id, { 
+              id: song.id,
+              value: title, 
+              artist: song.artist,
+              album: song.album,
+              score, 
+              type: 'song' 
+            });
+          }
+        }
+      }
+      
+      // Score genres
+      if (song.genre) {
+        const genre = song.genre;
+        const genreLower = genre.toLowerCase();
+        if (genreLower.includes(query)) {
+          const score = genreLower.startsWith(query) ? 100 : 50;
+          if (!genreSet.has(genre) || genreSet.get(genre).score < score) {
+            genreSet.set(genre, { value: genre, score, type: 'genre' });
+          }
+        }
+      }
+    }
+    
+    // Sort by score and limit results
+    const sortByScore = (a, b) => b.score - a.score;
+    
+    res.json({
+      artists: Array.from(artistSet.values()).sort(sortByScore).slice(0, maxLimit),
+      albums: Array.from(albumSet.values()).sort(sortByScore).slice(0, maxLimit),
+      songs: Array.from(songSet.values()).sort(sortByScore).slice(0, maxLimit),
+      genres: Array.from(genreSet.values()).sort(sortByScore).slice(0, maxLimit)
+    });
+  } catch (error) {
+    logger.error('Error getting suggestions', { error: error.message });
     res.status(500).json({ error: error.message });
   }
 });

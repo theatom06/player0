@@ -77,6 +77,13 @@ async function fetchWithCache(url, options = {}) {
             headers,
             cache: 'no-store'
         });
+        
+        // Handle auth redirects (GitHub Codespaces)
+        if (response.redirected || response.type === 'opaqueredirect') {
+          console.warn('API request was redirected (auth required?)');
+          throw new Error('Authentication required');
+        }
+        
         const data = await response.json();
 
         if (!response.ok) {
@@ -95,6 +102,13 @@ async function fetchWithCache(url, options = {}) {
   }
   
   const response = await fetch(url, options);
+  
+  // Handle auth redirects (GitHub Codespaces)
+  if (response.redirected || response.type === 'opaqueredirect') {
+    console.warn('API request was redirected (auth required?)');
+    throw new Error('Authentication required');
+  }
+  
   const data = await response.json();
   
   if (!response.ok) {
@@ -112,6 +126,27 @@ async function fetchWithCache(url, options = {}) {
 // ============================================
 // Search APIs
 // ============================================
+
+/**
+ * Get search suggestions/autocomplete
+ * @param {string} query - Partial search query (min 2 chars)
+ * @param {number} limit - Max suggestions per category
+ * @returns {Object} { artists, albums, songs, genres }
+ */
+async function getSearchSuggestions(query, limit = 5) {
+    if (!query || query.length < 2) {
+        return { artists: [], albums: [], songs: [], genres: [] };
+    }
+    
+    const response = await fetch(`${API_URL}/suggestions?q=${encodeURIComponent(query)}&limit=${limit}`);
+    const data = await response.json();
+    
+    if (!response.ok) {
+        throw new Error(data.message || 'Error getting suggestions');
+    }
+    
+    return data;
+}
 
 async function simpleSearch(input) {
     const response = await fetch(`${API_URL}/search?q=${encodeURIComponent(input)}`);
@@ -323,6 +358,7 @@ async function scanLibrary() {
 // ============================================
 
 export { 
+    getSearchSuggestions,
     simpleSearch, 
     advancedSearch, 
     fetchAllSongs, 

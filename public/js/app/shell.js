@@ -5,9 +5,17 @@ import { setupPlayerControls } from './playerSetup.js';
 import { setupSidebar } from './sidebar.js';
 import { initRouter } from './views.js';
 import { setupDropdowns } from './dropdowns.js';
+import { initLazyLoading } from '../utils.js';
+import { initEnhancements } from './enhancements.js';
 
 export function bootstrapApp() {
   document.addEventListener('DOMContentLoaded', async () => {
+    // Initialize lazy loading for images
+    initLazyLoading();
+    
+    // Initialize UI enhancements (blur bg, transitions, context menus, etc.)
+    initEnhancements();
+    
     setupNavigation();
     setupSearch();
     setupPlayerControls();

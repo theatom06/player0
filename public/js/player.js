@@ -177,6 +177,37 @@ export function initPlayer(audioElement) {
   updateQueue();
 
   setMiniPlayerPresence(Boolean(getCurrentSong()));
+  
+  // Listen for custom events from UI enhancements
+  document.addEventListener('togglePlayPause', () => togglePlayPause());
+  document.addEventListener('playPrevious', () => playPrevious());
+  document.addEventListener('playNext', () => playNext());
+  document.addEventListener('playSong', (e) => {
+    const song = e.detail;
+    if (song) {
+      // Set up playback list with just this song, or add to queue
+      setPlaybackList([song], 0);
+      playSong(song);
+    }
+  });
+  document.addEventListener('addToQueue', (e) => {
+    const song = e.detail;
+    if (song) {
+      addToQueue(song);
+    }
+  });
+  document.addEventListener('playNext', (e) => {
+    // If custom event has detail, it's "play this song next"
+    if (e.detail) {
+      addToQueueNext(e.detail);
+    }
+  });
+  document.addEventListener('reorderQueue', (e) => {
+    const { fromId, toId } = e.detail || {};
+    if (fromId && toId) {
+      reorderQueueById(fromId, toId);
+    }
+  });
 }
 
 function initShuffleRepeatControls() {
@@ -264,6 +295,9 @@ export function playSong(song) {
   
   // Record play
   recordPlay(song.id);
+  
+  // Dispatch song changed event for enhancements
+  document.dispatchEvent(new CustomEvent('songChanged', { detail: song }));
 }
 
 /**
@@ -354,6 +388,11 @@ function updateProgress() {
   if (miniProgressFill) {
     miniProgressFill.style.width = `${progress || 0}%`;
   }
+  
+  // Dispatch progress event for enhancements
+  document.dispatchEvent(new CustomEvent('progressUpdated', { 
+    detail: audioPlayer.duration ? audioPlayer.currentTime / audioPlayer.duration : 0 
+  }));
 }
 
 /**
@@ -374,6 +413,9 @@ function updatePlayButton() {
     playPauseButton.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor" width="32" height="32"><path d="M8 5v14l11-7z"/></svg>';
     miniPlayPause.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path d="M8 5v14l11-7z"/></svg>';
   }
+  
+  // Dispatch play state changed event for enhancements
+  document.dispatchEvent(new CustomEvent('playStateChanged', { detail: isPlaying }));
 }
 
 /**
@@ -590,4 +632,46 @@ export function setVolume(volume) {
  */
 export function getAudioPlayer() {
   return audioPlayer;
+}
+
+/**
+ * Add a song to the end of the queue
+ * @param {Object} song
+ */
+export function addToQueue(song) {
+  if (!song) return;
+  const newList = [...playbackList, song];
+  setPlaybackList(newList, playbackIndex);
+  updateQueue();
+}
+
+/**
+ * Add a song to play next (after current)
+ * @param {Object} song
+ */
+export function addToQueueNext(song) {
+  if (!song) return;
+  const insertIndex = playbackIndex + 1;
+  const newList = [
+    ...playbackList.slice(0, insertIndex),
+    song,
+    ...playbackList.slice(insertIndex)
+  ];
+  setPlaybackList(newList, playbackIndex);
+  updateQueue();
+}
+
+/**
+ * Reorder queue by song IDs
+ * @param {string} fromId
+ * @param {string} toId
+ */
+export function reorderQueueById(fromId, toId) {
+  const fromIndex = playbackList.findIndex(s => s.id === fromId);
+  const toIndex = playbackList.findIndex(s => s.id === toId);
+  
+  if (fromIndex === -1 || toIndex === -1 || fromIndex === toIndex) return;
+  
+  movePlaybackItem(fromIndex, toIndex);
+  updateQueue();
 }

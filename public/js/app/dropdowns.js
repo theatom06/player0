@@ -3,6 +3,7 @@ let wired = false;
 function resetMenu(menu) {
   if (!menu) return;
   menu.classList.remove('is-fixed');
+  menu.style.display = '';
   menu.style.left = '';
   menu.style.top = '';
   menu.style.minWidth = '';
@@ -15,6 +16,9 @@ function positionMenu(dropdown) {
   const menu = dropdown?.querySelector?.('.dropdown-menu');
   if (!trigger || !menu) return;
 
+  // Force menu to be visible for measurement
+  menu.style.display = 'block';
+  
   // Ensure menu is not clipped by overflow containers.
   menu.classList.add('is-fixed');
 
@@ -78,11 +82,13 @@ function toggleDropdown(trigger) {
   trigger.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
 
   if (willOpen) {
-    // Defer positioning/focus until after styles apply.
-    queueMicrotask(() => {
-      positionMenu(dropdown);
-      const firstItem = dropdown.querySelector('.dropdown-menu .dropdown-item');
-      if (firstItem) firstItem.focus();
+    // Use double RAF to ensure styles have applied before positioning
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        positionMenu(dropdown);
+        const firstItem = dropdown.querySelector('.dropdown-menu .dropdown-item');
+        if (firstItem) firstItem.focus();
+      });
     });
   } else {
     resetMenu(dropdown.querySelector('.dropdown-menu'));

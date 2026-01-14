@@ -1,5 +1,5 @@
 // UI Rendering Module
-import { formatDuration, escapeHtml } from './utils.js';
+import { formatDuration, escapeHtml, setupLazyImages, lazyImageHtml } from './utils.js';
 import { API_URL, songCoverUrl, albumCoverUrl, updatePlaylist } from './API.js';
 
 /**
@@ -48,7 +48,7 @@ export function renderSongs(songs, onPlaySong) {
         </button>
       </td>
       <td class="col-cover">
-        <img class="song-cover" src="${songCoverUrl(song.id)}" alt="${escapeHtml(song.title || 'Unknown')}" onerror="this.style.display='none';" />
+        ${lazyImageHtml(songCoverUrl(song.id), song.title || 'Unknown', 'song-cover')}
       </td>
       <td class="col-title">
         <div class="song-title-row">
@@ -94,6 +94,9 @@ export function renderSongs(songs, onPlaySong) {
     
     tbody.appendChild(tr);
   });
+  
+  // Setup lazy loading for newly added images
+  setupLazyImages(tbody);
 }
 
 /**
@@ -127,7 +130,7 @@ export function renderAlbums(albums, onAlbumClick) {
     const truncatedTitle = albumTitle.length > 25 ? albumTitle.substring(0, 25) + '...' : albumTitle;
     card.innerHTML = `
       <div class="album-cover-wrapper">
-        <img class="album-artwork" src="${coverUrl}" alt="${escapeHtml(albumTitle)}" onerror="this.style.display='none';" />
+        ${coverUrl ? lazyImageHtml(coverUrl, albumTitle, 'album-artwork') : ''}
         <div class="album-placeholder">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="48" height="48">
             <circle cx="12" cy="12" r="10"/>
@@ -142,6 +145,9 @@ export function renderAlbums(albums, onAlbumClick) {
     card.addEventListener('click', () => onAlbumClick(album.artist, album.album));
     grid.appendChild(card);
   });
+  
+  // Setup lazy loading for album artwork
+  setupLazyImages(grid);
 }
 
 /**
@@ -412,6 +418,54 @@ export function renderStats(stats) {
       </div>
     </div>
   `;
+  
+  // Try to render activity heatmap (optional enhancement)
+  try {
+    import('./app/enhancements.js').then(({ renderActivityHeatmap, renderTopCards }) => {
+      // Remove existing containers first to avoid duplicates
+      document.getElementById('statsHeatmap')?.remove();
+      document.getElementById('statsTopCards')?.remove();
+      
+      // Append to parent of layout (not inside the grid)
+      const parent = layout.parentElement;
+      if (!parent) return;
+      
+      // Render heatmap with play history
+      const heatmapContainer = document.createElement('div');
+      heatmapContainer.id = 'statsHeatmap';
+      parent.appendChild(heatmapContainer);
+      
+      const playHistory = (stats.recentlyPlayed || []).map(p => ({
+        timestamp: p.playedAt
+      }));
+      renderActivityHeatmap(heatmapContainer, playHistory);
+      
+      // Render top artists/albums cards
+      const topCardsContainer = document.createElement('div');
+      topCardsContainer.id = 'statsTopCards';
+      parent.appendChild(topCardsContainer);
+      
+      const topArtists = (stats.artistReport || []).slice(0, 5).map(a => ({
+        name: a.artist,
+        playCount: a.totalPlays,
+        cover: ''
+      }));
+      
+      const topAlbums = (stats.albumReport || []).slice(0, 5).map(a => ({
+        id: a.albumId || encodeURIComponent(a.album || ''),
+        name: a.album,
+        artist: a.artist,
+        playCount: a.totalPlays,
+        cover: a.cover || ''
+      }));
+      
+      if (topArtists.length > 0 || topAlbums.length > 0) {
+        renderTopCards(topCardsContainer, { topArtists, topAlbums });
+      }
+    }).catch(() => { /* enhancements not available */ });
+  } catch (e) {
+    // Enhancements module not available, that's okay
+  }
 }
 
 function formatDurationLong(seconds) {
