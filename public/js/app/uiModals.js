@@ -70,9 +70,20 @@ export function setupModal() {
 }
 
 export function closeAllModals() {
-  const ids = ['playlistModal', 'addToPlaylistModal', 'keyboardShortcutsModal', 'statsListModal'];
+  const ids = ['playlistModal', 'addToPlaylistModal', 'keyboardShortcutsModal', 'statsListModal', 'nowPlayingFullscreen'];
   ids.forEach((id) => {
     const el = document.getElementById(id);
-    if (el) el.style.display = 'none';
+    if (!el) return;
+
+    // Fullscreen now playing needs extra cleanup.
+    if (id === 'nowPlayingFullscreen') {
+      el.classList.remove('is-open');
+      el.setAttribute('aria-hidden', 'true');
+      document.body.classList.remove('npfs-open');
+      el.style.display = 'none';
+      return;
+    }
+
+    el.style.display = 'none';
   });
 }

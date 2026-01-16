@@ -227,6 +227,14 @@
       <div class="np-header">
         <h3>Now Playing</h3>
         <div class="np-header-actions">
+          <button class="np-icon-btn" id="openNowPlayingFullscreen" type="button" aria-label="Open fullscreen now playing" title="Fullscreen">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20" aria-hidden="true">
+              <path d="M8 3H5a2 2 0 0 0-2 2v3"/>
+              <path d="M16 3h3a2 2 0 0 1 2 2v3"/>
+              <path d="M8 21H5a2 2 0 0 1-2-2v-3"/>
+              <path d="M16 21h3a2 2 0 0 0 2-2v-3"/>
+            </svg>
+          </button>
           <button class="close-sidebar" id="closeSidebar" type="button" aria-label="Close">✕</button>
         </div>
       </div>
@@ -405,6 +413,61 @@
       </div>
       <div class="modal-body">
         <div class="stats-list" id="statsListModalBody"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Fullscreen Now Playing -->
+  <div class="np-fullscreen" id="nowPlayingFullscreen" style="display: none;" aria-hidden="true">
+    <div class="npfs-surface" role="dialog" aria-modal="true" aria-label="Now Playing">
+      <div class="npfs-header">
+        <button class="np-icon-btn" id="closeNowPlayingFullscreen" type="button" aria-label="Close fullscreen">✕</button>
+        <div class="npfs-header-title">Now Playing</div>
+        <button class="np-icon-btn" id="npfsOpenQueue" type="button" aria-label="Open queue" title="Queue">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20" aria-hidden="true">
+            <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>
+          </svg>
+        </button>
+      </div>
+
+      <div class="npfs-body">
+        <div class="npfs-art">
+          <img id="npfsArtwork" class="npfs-artwork" alt="Album artwork" />
+        </div>
+
+        <div class="npfs-meta">
+          <div id="npfsTitle" class="npfs-title">No song playing</div>
+          <div id="npfsArtist" class="npfs-artist"></div>
+        </div>
+
+        <div class="npfs-progress">
+          <div class="npfs-time" id="npfsCurrentTime">0:00</div>
+          <input type="range" id="npfsProgressBar" min="0" max="100" value="0" />
+          <div class="npfs-time" id="npfsTotalTime">0:00</div>
+        </div>
+
+        <div class="npfs-controls">
+          <button class="npfs-btn" id="npfsPrev" type="button" aria-label="Previous">
+            <svg viewBox="0 0 24 24" fill="currentColor" width="26" height="26" aria-hidden="true"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>
+          </button>
+          <button class="npfs-btn npfs-btn-play" id="npfsPlayPause" type="button" aria-label="Play/Pause">
+            <svg viewBox="0 0 24 24" fill="currentColor" width="34" height="34" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+          </button>
+          <button class="npfs-btn" id="npfsNext" type="button" aria-label="Next">
+            <svg viewBox="0 0 24 24" fill="currentColor" width="26" height="26" style="transform: rotate(180deg);" aria-hidden="true"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>
+          </button>
+
+          <button class="npfs-chip" id="npfsShuffle" type="button" aria-label="Toggle shuffle">Shuffle</button>
+          <button class="npfs-chip" id="npfsRepeat" type="button" aria-label="Cycle repeat">Repeat</button>
+        </div>
+
+        <div class="npfs-queue">
+          <div class="npfs-queue-header">
+            <div class="npfs-queue-title">Up Next</div>
+            <button class="npfs-chip" id="npfsClear" type="button">Clear</button>
+          </div>
+          <div class="npfs-queue-list" id="npfsQueueList"></div>
+        </div>
       </div>
     </div>
   </div>

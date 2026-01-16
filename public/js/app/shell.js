@@ -7,6 +7,7 @@ import { initRouter } from './views.js';
 import { setupDropdowns } from './dropdowns.js';
 import { initLazyLoading } from '../utils.js';
 import { initEnhancements } from './enhancements.js';
+import { setupNowPlayingFullscreen } from './nowPlayingFullscreen.js';
 
 export function bootstrapApp() {
   document.addEventListener('DOMContentLoaded', async () => {
@@ -22,6 +23,7 @@ export function bootstrapApp() {
     setupSidebar();
     setupModal();
     setupDropdowns();
+    setupNowPlayingFullscreen();
 
     // IMPORTANT: initRouter() triggers the initial view load.
     await initRouter();

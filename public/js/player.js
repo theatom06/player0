@@ -1,6 +1,7 @@
 // Player Module - Audio playback functionality
 import { formatDuration } from './utils.js';
 import { API_URL, songStreamUrl, albumCoverUrl, recordPlay as recordPlayAPI } from './API.js';
+import { initMediaSession, setMediaSessionMetadata, setMediaSessionPosition } from './mediaSession.js';
 import { 
   playbackList,
   playbackIndex,
@@ -22,6 +23,8 @@ import {
 } from './state.js';
 
 let audioPlayer = null;
+
+let lastMediaSessionPositionUpdate = 0;
 
 let draggingPlaybackIndex = null;
 let isQueueExpanded = false;
@@ -152,6 +155,23 @@ function setPendingHideSidebarTimeout(id) {
  */
 export function initPlayer(audioElement) {
   audioPlayer = audioElement;
+
+  // Lockscreen/hardware media controls (supported browsers only).
+  initMediaSession(audioPlayer, {
+    onPlay: () => void audioPlayer.play(),
+    onPause: () => audioPlayer.pause(),
+    onNext: () => playNext(),
+    onPrevious: () => playPrevious(),
+    onSeekTo: (time) => {
+      if (!audioPlayer) return;
+      audioPlayer.currentTime = Math.max(0, Math.min(Number(audioPlayer.duration || Infinity), Number(time) || 0));
+    },
+    onSeekBy: (deltaSeconds) => {
+      if (!audioPlayer) return;
+      const next = (Number(audioPlayer.currentTime) || 0) + (Number(deltaSeconds) || 0);
+      audioPlayer.currentTime = Math.max(0, Math.min(Number(audioPlayer.duration || Infinity), next));
+    }
+  });
   
   // Setup event listeners
   audioPlayer.addEventListener('timeupdate', updateProgress);
@@ -295,6 +315,15 @@ export function playSong(song) {
   
   // Record play
   recordPlay(song.id);
+
+  // Update Media Session metadata (lockscreen / media keys UI).
+  setMediaSessionMetadata({
+    title: song.title || 'Unknown',
+    artist: song.artist || 'Unknown Artist',
+    album: song.album || 'Unknown Album',
+    artworkUrl: albumCoverUrl(song.id)
+  });
+  setMediaSessionPosition(audioPlayer);
   
   // Dispatch song changed event for enhancements
   document.dispatchEvent(new CustomEvent('songChanged', { detail: song }));
@@ -393,6 +422,13 @@ function updateProgress() {
   document.dispatchEvent(new CustomEvent('progressUpdated', { 
     detail: audioPlayer.duration ? audioPlayer.currentTime / audioPlayer.duration : 0 
   }));
+
+  // Throttle Media Session position updates (some browsers are sensitive to spam).
+  const now = Date.now();
+  if (now - lastMediaSessionPositionUpdate >= 1000) {
+    lastMediaSessionPositionUpdate = now;
+    setMediaSessionPosition(audioPlayer);
+  }
 }
 
 /**
@@ -592,6 +628,9 @@ export function updateQueue() {
 
     queueList.appendChild(item);
   }
+
+  // Let other UI surfaces (fullscreen now playing, etc.) stay in sync.
+  document.dispatchEvent(new CustomEvent('queueUpdated'));
 }
 
 
