@@ -17,32 +17,117 @@
   box-sizing: border-box;
 }
 
+/* ========== Scrollbars (Custom, App-Wide) ========== */
+:root {
+  --scrollbar-size: 10px;
+  --scrollbar-track: rgba(255, 255, 255, 0.03);
+  --scrollbar-thumb: rgba(255, 255, 255, 0.12);
+  --scrollbar-thumb-hover: rgba(255, 255, 255, 0.18);
+}
+
+/* Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+}
+
+/* Chromium / Safari */
+::-webkit-scrollbar {
+  width: var(--scrollbar-size);
+  height: var(--scrollbar-size);
+}
+
+::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 999px;
+  border: 3px solid transparent;
+  background-clip: padding-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* ========== Fonts (Offline Bundled) ========== */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('../fonts/InterVariable.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Inter';
+  font-style: italic;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('../fonts/InterVariable-Italic.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Material Symbols Rounded';
+  font-style: normal;
+  font-weight: 100 700;
+  font-display: swap;
+  src:
+    url('../fonts/MaterialSymbolsRounded.woff2') format('woff2'),
+    url('../fonts/MaterialSymbolsRounded.ttf') format('truetype');
+}
+
 /* ========== CSS Variables ========== */
 :root {
   /* Colors */
-  --primary: #7aa2ff;           /* Soft blue highlight */
-  --primary-dark: #5b86ff;      /* Darker blue for hover */
-  --accent: #e8ecff;            /* Near-white accent (borders/highlights) */
-  --bg-dark: #050713;           /* Near-black deep blue */
-  --bg-medium: #090f21;         /* Slightly lighter navy */
-  --bg-light: #0e1833;          /* Card surface */
+  /* Muted grayscale base (dynamic colors layered on top) */
+  --primary: #f8fafc;
+  --primary-dark: #e5e7eb;
+  --accent: #ffffff;
+  --bg-dark: #050505;
+  --bg-medium: #0b0b0b;
+  --bg-light: #121212;
   --bg: var(--bg-dark);         /* Legacy alias (used in a few components) */
   --text-primary: #f8fafc;      /* Primary text */
-  --text-secondary: #94a3b8;    /* Secondary/muted text */
-  --border: rgba(255, 255, 255, 0.08);
+  --text-secondary: rgba(248, 250, 252, 0.72);
+  --border: rgba(255, 255, 255, 0.10);
   --border-subtle: rgba(255, 255, 255, 0.08);
-  --hover: rgba(255, 255, 255, 0.045);  /* Hover overlay */
+  --hover: rgba(255, 255, 255, 0.06);  /* Hover overlay */
 
   /* Button tokens (white pills like the reference) */
   --btn-primary-bg: #f8fafc;
-  --btn-primary-fg: #050713;
+  --btn-primary-fg: #050505;
   --btn-primary-hover-bg: #ffffff;
   --btn-secondary-bg: rgba(255, 255, 255, 0.06);
   --btn-secondary-border: rgba(255, 255, 255, 0.12);
 
+  /* Controls */
+  --control-height: 44px;
+  --control-height-sm: 40px;
+  --control-radius: 14px;
+  --pill-radius: 999px;
+
+  /* Focus rings */
+  --focus-ring-color: color-mix(in srgb, var(--primary) 22%, transparent);
+  --focus-ring: 0 0 0 3px var(--focus-ring-color);
+  --focus-border: color-mix(in srgb, var(--primary) 55%, rgba(255, 255, 255, 0.35));
+
+  /* Motion */
+  --ease-out: cubic-bezier(0.2, 0, 0, 1);
+  --ease-in-out: cubic-bezier(0.45, 0, 0.2, 1);
+  --dur-1: 150ms;
+  --dur-2: 240ms;
+  --dur-3: 360ms;
+
   /* Accents */
-  --glow-primary: rgba(122, 162, 255, 0.55);
-  --vignette: radial-gradient(1200px 700px at 50% -120px, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0) 55%);
+  --glow-primary: rgba(255, 255, 255, 0.18);
 
   /* Surfaces */
   --surface-0: var(--bg-dark);
@@ -50,21 +135,320 @@
   --surface-2: var(--bg-light);
 
   /* Radii */
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 16px;
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
 
   /* Shadows */
   --shadow-1: 0 2px 10px rgba(0, 0, 0, 0.35);
   --shadow-2: 0 10px 26px rgba(0, 0, 0, 0.55);
+
+  /* Typography */
+  --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+  --font-icons: 'Material Symbols Rounded';
+
+  /* Icon font tuning (Material Symbols) */
+  --icon-weight: 600;
+  --icon-opsz: 24;
+  --icon-grad: 200;
+
+  /* Dynamic theme (album-art derived) */
+  --dynamic-primary: var(--primary);
+  --dynamic-secondary: var(--text-secondary);
+  --dynamic-accent: var(--accent);
+  --dynamic-tertiary: color-mix(in srgb, var(--dynamic-primary) 50%, var(--bg-dark));
+  --dynamic-muted: color-mix(in srgb, var(--dynamic-tertiary) 20%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur-1: 1ms;
+    --dur-2: 1ms;
+    --dur-3: 1ms;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Manual override: user setting to disable all animations */
+body.no-animations,
+body.no-animations *,
+body.no-animations *::before,
+body.no-animations *::after {
+  animation: none !important;
+  transition: none !important;
+  scroll-behavior: auto !important;
+}
+
+/* Material Symbols (Google Fonts) */
+.material-symbols-rounded {
+  font-family: var(--font-icons);
+  font-weight: var(--icon-weight);
+  font-style: normal;
+  font-size: 20px;
+  line-height: 1;
+  display: inline-block;
+  letter-spacing: normal;
+  text-transform: none;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  -webkit-font-feature-settings: 'liga';
+  -webkit-font-smoothing: antialiased;
+  font-variation-settings: 'FILL' 0, 'wght' var(--icon-weight), 'GRAD' var(--icon-grad), 'opsz' var(--icon-opsz);
+}
+
+.material-symbols-rounded.is-filled {
+  font-variation-settings: 'FILL' 1, 'wght' var(--icon-weight), 'GRAD' var(--icon-grad), 'opsz' var(--icon-opsz);
 }
 
 /* ========== Base Typography ========== */
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  font-family: var(--font-sans);
+  color-scheme: dark;
   background: var(--bg-dark);
+  background-image: none;
   color: var(--text-primary);
   overflow: hidden;  /* Prevent page scroll, use internal scrolling */
+
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: 'ss01' 1, 'cv02' 1;
+}
+
+/* Native selects/options (best-effort, OS/browser dependent) */
+select {
+  color-scheme: dark;
+}
+
+select option,
+select optgroup {
+  background-color: var(--bg-dark);
+  color: var(--text-primary);
+}
+
+/* Custom select wrapper: keep native select for logic, hide it from layout */
+.select-dropdown {
+  display: inline-block;
+  position: relative;
+}
+
+.select-dropdown .select-dropdown-trigger {
+  width: 100%;
+}
+
+.select-dropdown-native {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Album art blur background (fills behind the app) */
+.album-blur-bg {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: -1;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.album-blur-bg::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background-size: cover;
+  background-position: center;
+  filter: blur(90px) saturate(1.08);
+  opacity: 0.12;
+  transition: background-image 0.8s ease-out, opacity 0.8s ease-out;
+}
+
+.album-blur-bg.has-image::before {
+  background-image: var(--album-bg-image);
+  opacity: 0.16;
+}
+
+.album-blur-bg::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: none;
+}
+
+/* Dynamic theme: subtly push extracted colors into global tokens */
+body.dynamic-themed {
+  --primary: var(--dynamic-primary);
+  --primary-dark: color-mix(in srgb, var(--dynamic-primary) 82%, white);
+  --accent: var(--dynamic-secondary);
+
+  --bg-medium: color-mix(in srgb, var(--dynamic-tertiary) 6%, var(--bg-medium));
+  --bg-light: color-mix(in srgb, var(--dynamic-tertiary) 9%, var(--bg-light));
+  --hover: color-mix(in srgb, var(--dynamic-tertiary) 10%, rgba(255, 255, 255, 0.06));
+  --border: color-mix(in srgb, var(--dynamic-tertiary) 14%, rgba(255, 255, 255, 0.10));
+  --border-subtle: color-mix(in srgb, var(--dynamic-tertiary) 10%, rgba(255, 255, 255, 0.08));
+  --glow-primary: color-mix(in srgb, var(--dynamic-primary) 22%, transparent);
+
+  /* Scrollbar accents (keep subtle, but match album color) */
+  --scrollbar-thumb-hover: color-mix(in srgb, var(--dynamic-accent) 32%, rgba(255, 255, 255, 0.18));
+}
+
+.dynamic-themed .np-artwork {
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 0 0 40px color-mix(in srgb, var(--dynamic-accent) 25%, transparent);
+  border: 1px solid color-mix(in srgb, var(--dynamic-accent) 20%, transparent);
+}
+
+.dynamic-themed .control-btn:hover {
+  color: var(--dynamic-accent);
+}
+
+.dynamic-themed .control-btn-play {
+  background: var(--dynamic-accent);
+  color: var(--bg-dark);
+}
+
+.dynamic-themed .control-btn-play:hover {
+  background: color-mix(in srgb, var(--dynamic-accent) 85%, white);
+  color: var(--bg-dark);
+}
+
+.dynamic-themed .progress-bar input[type="range"]::-webkit-slider-thumb {
+  background: var(--dynamic-accent);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--dynamic-accent) 50%, transparent);
+}
+
+.dynamic-themed .progress-bar input[type="range"]::-webkit-slider-runnable-track {
+  background: var(--bg-light);
+}
+
+.dynamic-themed .now-playing-sidebar {
+  background-image: none;
+}
+
+.dynamic-themed .mini-player {
+  border-top-color: color-mix(in srgb, var(--dynamic-secondary) 18%, var(--border));
+}
+
+.dynamic-themed .nav-item.active {
+  color: var(--dynamic-accent);
+  border-left-color: var(--dynamic-accent);
+}
+
+.dynamic-themed .nav-item:hover {
+  color: var(--dynamic-accent);
+}
+
+.dynamic-themed .btn-primary {
+  background: var(--dynamic-accent);
+  color: var(--bg-dark);
+}
+
+.dynamic-themed .btn-primary:hover {
+  background: color-mix(in srgb, var(--dynamic-accent) 85%, white);
+}
+
+.dynamic-themed .btn-secondary:hover {
+  border-color: var(--dynamic-accent);
+  color: var(--dynamic-accent);
+}
+
+.dynamic-themed .album-card:hover,
+.dynamic-themed .artist-card:hover,
+.dynamic-themed .playlist-card:hover {
+  border-color: color-mix(in srgb, var(--dynamic-accent) 40%, transparent);
+}
+
+.dynamic-themed .stat-tile:hover {
+  border-color: color-mix(in srgb, var(--dynamic-accent) 50%, transparent);
+}
+
+.dynamic-themed .song-table tbody tr:hover {
+  background: color-mix(in srgb, var(--dynamic-muted) 30%, var(--bg-light));
+}
+
+.dynamic-themed .song-table tbody tr.is-playing {
+  background: color-mix(in srgb, var(--dynamic-accent) 10%, var(--bg-medium));
+}
+
+.dynamic-themed .song-table tbody tr.is-playing td:first-child::before {
+  background: var(--dynamic-accent);
+}
+
+.dynamic-themed .dropdown-item:hover,
+.dynamic-themed .dropdown-item:focus {
+  background: color-mix(in srgb, var(--dynamic-accent) 15%, transparent);
+}
+
+.dynamic-themed .context-menu-item:hover {
+  background: color-mix(in srgb, var(--dynamic-accent) 15%, transparent);
+}
+
+.dynamic-themed a:hover {
+  color: var(--dynamic-accent);
+}
+
+
+.dynamic-themed .queue-item:hover {
+  background: color-mix(in srgb, var(--dynamic-muted) 40%, var(--bg-light));
+}
+
+.dynamic-themed .queue-item.is-current {
+  border-left-color: var(--dynamic-accent);
+  background: color-mix(in srgb, var(--dynamic-accent) 8%, var(--bg-medium));
+}
+
+.dynamic-themed #searchInput:focus {
+  border-color: color-mix(in srgb, var(--dynamic-accent) 60%, transparent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--dynamic-accent) 15%, transparent);
+}
+
+.dynamic-themed .search-filter-pill {
+  background: color-mix(in srgb, var(--dynamic-accent) 15%, var(--bg-medium));
+  border-color: color-mix(in srgb, var(--dynamic-accent) 30%, transparent);
+}
+
+/* ========== Accessibility / Focus ========== */
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: none;
+}
+
+/* Apply a consistent ring to common interactive controls.
+   (Dropdown items handle focus via background highlight instead.) */
+:where(
+  button,
+  input,
+  select,
+  textarea,
+  .btn-primary,
+  .btn-secondary,
+  .icon-button,
+  .search-button,
+  .dropdown-trigger,
+  .modal-close
+):focus-visible {
+  box-shadow: var(--focus-ring);
 }
 
 /* ========== Layout Grid ========== */

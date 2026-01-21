@@ -1,6 +1,16 @@
 <div class="view-header">
   <h2>Library</h2>
   <div class="view-controls">
+    <select class="control-select" id="librarySortKey" aria-label="Sort songs">
+      <option value="title">Sort: Title</option>
+      <option value="artist">Sort: Artist</option>
+      <option value="album">Sort: Album</option>
+      <option value="duration">Sort: Duration</option>
+      <option value="plays">Sort: Plays</option>
+      <option value="added">Sort: Added</option>
+    </select>
+    <button class="btn-secondary" id="librarySortDir" type="button" aria-label="Toggle sort direction">A→Z</button>
+    <div class="view-meta" id="libraryResultsCount" aria-live="polite"></div>
     <button class="btn-primary" id="playAll">
       <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
         <path d="M8 5v14l11-7z"/>
@@ -21,11 +31,11 @@
       <tr>
         <th class="col-play"></th>
         <th class="col-cover"></th>
-        <th class="col-title">Title</th>
-        <th class="col-artist">Artist</th>
-        <th class="col-album">Album</th>
-        <th class="col-duration">Duration</th>
-        <th class="col-plays">Plays</th>
+        <th class="col-title" data-sort-key="title" title="Sort by title">Title</th>
+        <th class="col-artist" data-sort-key="artist" title="Sort by artist">Artist</th>
+        <th class="col-album" data-sort-key="album" title="Sort by album">Album</th>
+        <th class="col-duration" data-sort-key="duration" title="Sort by duration">Duration</th>
+        <th class="col-plays" data-sort-key="plays" title="Sort by plays">Plays</th>
         <th class="col-add"></th>
       </tr>
     </thead>

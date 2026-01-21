@@ -1,5 +1,0 @@
-[ ] Extras
-	[ ] Lyrics display
-	[ ] BPM detection / tagging
-	[ ] Mood playlists based on BPM and tone
-	[ ] New music notifications after scans

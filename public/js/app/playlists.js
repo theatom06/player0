@@ -8,7 +8,8 @@ import {
   listPlaylists,
   updatePlaylist,
   removeSongFromPlaylist
-} from '../API.js';
+} from '../api.js';
+import { escapeHtml } from '../utils.js';
 import { setCurrentSongs, setPlaybackList } from '../state.js';
 import { playSong } from '../player.js';
 import { renderPlaylistDetail, renderPlaylists } from '../ui.js';
@@ -17,6 +18,203 @@ import { exportPlaylistAsM3U, exportPlaylistAsPLS } from './playlistImportExport
 
 let currentSongForPlaylist = null;
 let lastPlaylists = [];
+
+function inferTone(key) {
+  const k = String(key || '').trim().toLowerCase();
+  if (!k) return null;
+
+  // Common forms:
+  // - "C#m" / "Am" -> minor
+  // - "A minor" / "C major" -> minor/major
+  // - "Cmaj" / "Cmin" -> major/minor
+  if (k.includes('minor') || k.includes('min')) return 'dark';
+  if (k.includes('major') || k.includes('maj')) return 'bright';
+  if (/[a-g](#|b)?m\b/.test(k)) return 'dark';
+  return null;
+}
+
+function normalizeBpm(value) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return null;
+  if (n < 30 || n > 300) return null;
+  return Math.round(n);
+}
+
+function getSmartMoodPlaylists(allSongs) {
+  const songs = Array.isArray(allSongs) ? allSongs : [];
+
+  const defs = [
+    {
+      id: 'mood_chill',
+      name: 'Chill',
+      description: '60–95 BPM',
+      filter: (s) => {
+        const bpm = normalizeBpm(s?.bpm);
+        return bpm !== null && bpm >= 60 && bpm <= 95;
+      }
+    },
+    {
+      id: 'mood_focus',
+      name: 'Focus',
+      description: '96–120 BPM',
+      filter: (s) => {
+        const bpm = normalizeBpm(s?.bpm);
+        return bpm !== null && bpm >= 96 && bpm <= 120;
+      }
+    },
+    {
+      id: 'mood_energy',
+      name: 'Energy',
+      description: '121–145 BPM',
+      filter: (s) => {
+        const bpm = normalizeBpm(s?.bpm);
+        return bpm !== null && bpm >= 121 && bpm <= 145;
+      }
+    },
+    {
+      id: 'mood_hype',
+      name: 'Hype',
+      description: '146+ BPM',
+      filter: (s) => {
+        const bpm = normalizeBpm(s?.bpm);
+        return bpm !== null && bpm >= 146;
+      }
+    },
+    {
+      id: 'tone_bright',
+      name: 'Bright Tone',
+      description: 'Major key (when tagged)',
+      filter: (s) => inferTone(s?.key) === 'bright'
+    },
+    {
+      id: 'tone_dark',
+      name: 'Dark Tone',
+      description: 'Minor key (when tagged)',
+      filter: (s) => inferTone(s?.key) === 'dark'
+    },
+    {
+      id: 'needs_bpm',
+      name: 'Needs BPM',
+      description: 'Missing BPM tags',
+      filter: (s) => normalizeBpm(s?.bpm) === null
+    }
+  ];
+
+  return defs.map((d) => {
+    const list = songs.filter(d.filter);
+    return {
+      ...d,
+      songCount: list.length,
+      _songs: list
+    };
+  });
+}
+
+function renderMoodPlaylists(playlists) {
+  const grid = document.getElementById('moodPlaylistGrid');
+  if (!grid) return;
+
+  grid.innerHTML = '';
+
+  const list = (playlists || []).filter(p => (p.songCount || 0) > 0);
+  if (list.length === 0) {
+    grid.innerHTML = `
+      <div class="empty-state-content" style="grid-column: 1 / -1;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="64" height="64">
+          <path d="M9 18V5l12-2v13"/>
+          <circle cx="6" cy="18" r="3"/>
+          <circle cx="18" cy="16" r="3"/>
+        </svg>
+        <h3>No Mood Playlists Yet</h3>
+        <p>Add BPM tags (⋯ → Edit BPM) or rescan your library.</p>
+      </div>`;
+    return;
+  }
+
+  list.forEach((p) => {
+    const card = document.createElement('div');
+    card.className = 'playlist-card';
+    card.dataset.smartPlaylistId = p.id;
+    card.innerHTML = `
+      <div class="playlist-cover">
+        <svg viewBox="0 0 24 24" fill="currentColor" width="48" height="48">
+          <path d="M12 3v10.55a4 4 0 1 0 2 3.45V7h4V3h-6z"/>
+        </svg>
+      </div>
+      <div class="playlist-info">
+        <h3>${escapeHtml(p.name)}</h3>
+        <p>${p.songCount || 0} songs • ${escapeHtml(p.description || '')}</p>
+      </div>
+    `;
+    card.addEventListener('click', () => {
+      void loadSmartPlaylistDetail(p);
+    });
+    grid.appendChild(card);
+  });
+}
+
+async function loadSmartPlaylistDetail(def) {
+  const allSongs = await fetchAllSongs();
+  const songs = (Array.isArray(def?._songs) && def._songs.length)
+    ? def._songs
+    : (Array.isArray(allSongs) ? allSongs.filter(def.filter) : []);
+
+  // Mark as smart playlist so normal delete/remove actions don't apply.
+  window.currentPlaylistId = null;
+  window.currentPlaylistSongs = songs;
+
+  await switchView('playlistDetailView', false);
+  window.location.hash = `#/mood/${def.id}`;
+  await new Promise(resolve => setTimeout(resolve, 0));
+
+  renderPlaylistDetail({ id: def.id, name: def.name, description: def.description }, songs);
+
+  const backBtn = document.getElementById('backToPlaylists');
+  if (backBtn) {
+    backBtn.onclick = () => {
+      window.location.hash = '#/playlists';
+    };
+  }
+
+  const playAllBtn = document.getElementById('playPlaylistAll');
+  if (playAllBtn) {
+    playAllBtn.onclick = () => {
+      if (songs.length > 0) {
+        setCurrentSongs(songs);
+        setPlaybackList(songs, 0);
+        playSong(songs[0]);
+      }
+    };
+  }
+
+  const shuffleBtn = document.getElementById('playlistShuffle');
+  if (shuffleBtn) {
+    shuffleBtn.onclick = () => {
+      if (!songs.length) return;
+      const shuffled = [...songs]
+        .map((s) => ({ s, r: Math.random() }))
+        .sort((a, b) => a.r - b.r)
+        .map((x) => x.s);
+      setCurrentSongs(shuffled);
+      setPlaybackList(shuffled, 0);
+      playSong(shuffled[0]);
+    };
+  }
+
+  // Hide actions that only apply to real playlists.
+  const idsToHide = ['playlistEdit', 'playlistDelete', 'playlistExportM3U', 'playlistExportPLS'];
+  idsToHide.forEach((id) => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = 'none';
+  });
+
+  document.querySelectorAll('.remove-from-playlist-btn').forEach((btn) => {
+    btn.style.display = 'none';
+  });
+  document.querySelectorAll('.playlist-drag-handle').forEach((h) => {
+    h.style.display = 'none';
+  });
+}
 
 function getPlaylistSortMode() {
   try {
@@ -128,6 +326,15 @@ function wirePlaylistsControls() {
 
 export async function loadPlaylists() {
   try {
+    // Smart playlists (moods) are computed from the library.
+    try {
+      const songs = await fetchAllSongs();
+      renderMoodPlaylists(getSmartMoodPlaylists(songs));
+    } catch (err) {
+      console.warn('Failed to load mood playlists:', err);
+      renderMoodPlaylists([]);
+    }
+
     const playlists = await listPlaylists();
 
     lastPlaylists = Array.isArray(playlists) ? playlists : [];
@@ -370,13 +577,6 @@ export async function openAddToPlaylistModal(songId) {
   }
 }
 
-function escapeHtml(text) {
-  const div = document.createElement('div');
-  div.textContent = text;
-  return div.innerHTML;
-}
-
-// Globals used by UI renderers
 window.onPlaySongFromPlaylist = onPlaySongFromPlaylist;
 window.loadPlaylistDetail = loadPlaylistDetail;
 window.openAddToPlaylistModal = openAddToPlaylistModal;

@@ -40,6 +40,7 @@ class Storage {
     this.playlistsFile = path.join(this.dataDir, 'playlists.json');
     this.statsFile = path.join(this.dataDir, 'stats.json');
     this.playHistoryFile = path.join(this.dataDir, 'play_history.json');
+    this.lyricsCacheFile = path.join(this.dataDir, 'lyrics_cache.json');
   }
 
   /**
@@ -56,6 +57,33 @@ class Storage {
     await this.ensureFile(this.playlistsFile, []);
     await this.ensureFile(this.statsFile, {});
     await this.ensureFile(this.playHistoryFile, []);
+    await this.ensureFile(this.lyricsCacheFile, {});
+  }
+
+  // ============================================
+  // Lyrics Cache
+  // ============================================
+
+  async getLyricsCache() {
+    const cache = await this.readJSON(this.lyricsCacheFile);
+    return cache && typeof cache === 'object' ? cache : {};
+  }
+
+  async saveLyricsCache(cache) {
+    return await this.writeJSON(this.lyricsCacheFile, cache && typeof cache === 'object' ? cache : {});
+  }
+
+  async getLyricsEntry(songId) {
+    if (!songId) return null;
+    const cache = await this.getLyricsCache();
+    return cache[songId] || null;
+  }
+
+  async setLyricsEntry(songId, entry) {
+    if (!songId) return false;
+    const cache = await this.getLyricsCache();
+    cache[songId] = entry;
+    return await this.saveLyricsCache(cache);
   }
 
   /**

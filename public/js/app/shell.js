@@ -6,16 +6,20 @@ import { setupSidebar } from './sidebar.js';
 import { initRouter } from './views.js';
 import { setupDropdowns } from './dropdowns.js';
 import { initLazyLoading } from '../utils.js';
-import { initEnhancements } from './enhancements.js';
-import { setupNowPlayingFullscreen } from './nowPlayingFullscreen.js';
+import { initUIFeatures } from './uiFeatures.js';
+import { setupLyrics } from './lyrics.js';
+import { applyAppearancePreferences } from './settings.js';
 
 export function bootstrapApp() {
   document.addEventListener('DOMContentLoaded', async () => {
     // Initialize lazy loading for images
     initLazyLoading();
+
+    // Apply persisted appearance prefs early (before UI features run).
+    applyAppearancePreferences();
     
-    // Initialize UI enhancements (blur bg, transitions, context menus, etc.)
-    initEnhancements();
+    // Initialize UI add-ons (blur bg, transitions, context menus, etc.)
+    initUIFeatures();
     
     setupNavigation();
     setupSearch();
@@ -23,7 +27,7 @@ export function bootstrapApp() {
     setupSidebar();
     setupModal();
     setupDropdowns();
-    setupNowPlayingFullscreen();
+    setupLyrics();
 
     // IMPORTANT: initRouter() triggers the initial view load.
     await initRouter();
@@ -47,5 +51,8 @@ export function bootstrapApp() {
       miniPlayer.style.transform = 'translateY(100%)';
     }
     document.querySelector('.app-container')?.classList.add('sidebar-closed');
+
+    // Notify other modules that layout (including sidebar-closed) is finalized.
+    document.dispatchEvent(new CustomEvent('player0:layoutReady'));
   });
 }

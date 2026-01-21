@@ -1,4 +1,4 @@
-import { getAlbumDetail, listAlbums } from '../API.js';
+import { getAlbumDetail, listAlbums } from '../api.js';
 import { currentSongs, setPlaybackList, setShuffleEnabled, setRepeatMode } from '../state.js';
 import { playSong } from '../player.js';
 import { renderAlbumDetail, renderAlbums } from '../ui.js';
@@ -61,7 +61,7 @@ export async function loadAlbumDetail(artist, album) {
     // Render similar songs if we have the first song
     if (currentAlbumSongs.length > 0) {
       try {
-        const { renderSimilarSongs } = await import('./enhancements.js');
+        const { renderSimilarSongs } = await import('./uiFeatures.js');
         const container = document.getElementById('similarSongsContainer');
         if (container) {
           renderSimilarSongs(currentAlbumSongs[0], container);

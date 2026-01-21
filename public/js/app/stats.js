@@ -1,5 +1,5 @@
 import { formatDuration } from '../utils.js';
-import { fetchAllSongs, getStats, songCoverUrl } from '../API.js';
+import { fetchAllSongs, getStats, songCoverUrl } from '../api.js';
 import { setCurrentSongs } from '../state.js';
 import { renderStats } from '../ui.js';
 import { playSongFromList } from './library.js';

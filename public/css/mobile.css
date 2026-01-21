@@ -179,6 +179,21 @@ body.mobile-search-open .search-bar {
   padding: 10px 8px;
 }
 
+/* Advanced Search: stack fields on mobile */
+.search-filters--main {
+  grid-template-columns: 1fr;
+}
+
+.search-filter-actions {
+  grid-column: 1 / -1;
+  justify-content: stretch;
+}
+
+.search-filter-actions .btn-primary,
+.search-filter-actions .btn-secondary {
+  flex: 1 1 0;
+}
+
 .content-area {
   padding: 10px 10px calc(58px + env(safe-area-inset-bottom) + 12px) 10px;
 }
@@ -211,19 +226,35 @@ body.has-mini-player .content-area {
 .view-controls,
 .album-actions,
 .settings-action-controls {
-  flex-direction: column;
-  align-items: stretch;
-  gap: 8px;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
   width: 100%;
   margin-top: 8px;
 }
 
 .btn-primary,
 .btn-secondary {
-  width: 100%;
+  width: auto;
   min-height: 44px;
   font-size: 15px;
-  border-radius: 16px;
+  border-radius: 999px;
+  padding: 10px 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Keep some single-row action areas from collapsing awkwardly */
+.search-filter-actions {
+  justify-content: flex-start;
+}
+
+.search-filter-actions .btn-primary,
+.search-filter-actions .btn-secondary {
+  flex: 1 1 0;
 }
 
 .playlist-grid {
@@ -369,6 +400,51 @@ body.has-mini-player .content-area {
   font-size: 12px;
 }
 
+.settings-section {
+  padding: 18px 14px;
+}
+
+.settings-action-grid {
+  grid-template-columns: 1fr;
+}
+
+.settings-action-card {
+  padding: 16px;
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.settings-action-controls {
+  justify-content: flex-start;
+}
+
+.settings-action-grid {
+  gap: 14px;
+}
+
+.settings-select {
+  min-width: 0;
+  width: 100%;
+}
+
+/* Similar songs: keep covers square + rounded on mobile */
+.similar-songs-section {
+  padding: 14px;
+}
+
+.similar-song-card {
+  flex: 0 0 140px;
+  padding: 12px;
+}
+
+.similar-song-cover {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1;
+  border-radius: 12px;
+}
+
 #playlistDetailView .view-header {
   padding: 14px;
   border-radius: 14px;
@@ -411,7 +487,9 @@ body.has-mini-player .content-area {
   position: sticky;
   top: 0;
   z-index: 1;
-  background: var(--bg-dark);
+  background: rgba(5, 5, 5, 0.78);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
   padding: calc(env(safe-area-inset-top) + 12px) 12px 10px 12px;
   margin-bottom: 14px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
@@ -430,6 +508,12 @@ body.has-mini-player .content-area {
   align-items: center;
   justify-content: center;
   background: rgba(255, 255, 255, 0.06);
+  border: none;
+}
+
+.close-sidebar .material-symbols-rounded {
+  font-size: 22px;
+  line-height: 1;
 }
 
 .close-sidebar:hover {
@@ -449,11 +533,12 @@ body.has-mini-player .content-area {
   height: 34px;
   border-radius: 12px;
   background: rgba(255, 255, 255, 0.06);
+  border: none;
   cursor: grab;
 }
 
 .np-current-song {
-  margin-bottom: 16px;
+  margin-bottom: 12px;
 }
 
 .np-artwork {
@@ -479,11 +564,13 @@ body.has-mini-player .content-area {
   max-width: none;
   border-radius: 16px;
   border: 1px solid var(--border);
-  box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+  box-shadow: var(--shadow-2);
   padding: 10px 12px;
-  background: var(--bg-dark);
+  background: rgba(10, 12, 16, 0.90);
+  background-image: none;
   gap: 12px;
   align-items: center;
+  backdrop-filter: blur(16px);
 }
 
 .mini-player-info {
@@ -536,6 +623,50 @@ body.has-mini-player .content-area {
   font-size: 28px;
 }
 
+.modal-close .material-symbols-rounded {
+  font-size: 22px;
+  line-height: 1;
+}
+
+/* ===== Mobile-only overlays (context menu as bottom sheet) ===== */
+  .context-menu {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    top: auto;
+    max-width: 100%;
+    border-radius: 20px 20px 0 0;
+    padding: 8px 0 calc(16px + env(safe-area-inset-bottom));
+    animation: contextMenuMobileIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    max-height: 70vh;
+    overflow-y: auto;
+  }
+
+  .context-menu::before {
+    content: '';
+    display: block;
+    width: 40px;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 2px;
+    margin: 8px auto 12px;
+  }
+
+  @keyframes contextMenuMobileIn {
+    from {
+      transform: translateY(100%);
+    }
+    to {
+      transform: translateY(0);
+    }
+  }
+
+  .context-menu-item {
+    padding: 16px 24px;
+    font-size: 16px;
+  }
+
 }
 
 @media (max-width: 520px) {
@@ -558,7 +689,7 @@ body.has-mini-player .content-area {
   }
 
   .settings-section {
-    padding: 10px 4px;
+    padding: 16px 10px;
   }
 
   .settings-action-grid {
@@ -572,7 +703,7 @@ body.has-mini-player .content-area {
   .settings-action-card {
     align-items: stretch;
     flex-direction: column;
-    padding: 10px 6px;
+    padding: 14px 12px;
   }
 
   .settings-action-controls {

@@ -1,4 +1,4 @@
-import { listArtists } from '../API.js';
+import { listArtists } from '../api.js';
 import { renderArtists } from '../ui.js';
 import { switchView } from './views.js';
 import { performSearch } from './search.js';

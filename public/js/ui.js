@@ -1,6 +1,7 @@
 // UI Rendering Module
 import { formatDuration, escapeHtml, setupLazyImages, lazyImageHtml } from './utils.js';
-import { API_URL, songCoverUrl, albumCoverUrl, updatePlaylist } from './API.js';
+import { API_URL, songCoverUrl, albumCoverUrl, updatePlaylist } from './api.js';
+import { buildSongRowHtml } from './components/song-row.js';
 
 /**
  * Renders the song list
@@ -33,65 +34,21 @@ export function renderSongs(songs, onPlaySong) {
   
   songs.forEach((song, index) => {
     const tr = document.createElement('tr');
-    const albumTitle = song.album || 'Unknown Album';
-    const truncatedAlbum = albumTitle.length > 30 ? albumTitle.substring(0, 30) + '...' : albumTitle;
-    const artistName = song.artist || 'Unknown Artist';
-    const playCount = song.playCount || 0;
-    const durationText = formatDuration(song.duration);
-    const copyText = `${song.title || 'Unknown'} — ${artistName}`;
-    tr.innerHTML = `
-      <td class="col-play">
-        <button class="play-button" data-index="${index}">
-          <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
-            <path d="M8 5v14l11-7z"/>
-          </svg>
-        </button>
-      </td>
-      <td class="col-cover">
-        ${lazyImageHtml(songCoverUrl(song.id), song.title || 'Unknown', 'song-cover')}
-      </td>
-      <td class="col-title">
-        <div class="song-title-row">
-          <div class="song-title-text">${escapeHtml(song.title || 'Unknown')}</div>
-          <div class="song-subtitle">
-            <span class="song-sub-artist">${escapeHtml(artistName)}</span>
-            <span class="song-sub-sep">•</span>
-            <span class="song-sub-album" title="${escapeHtml(albumTitle)}">${escapeHtml(truncatedAlbum)}</span>
-            <span class="song-sub-sep">•</span>
-            <span class="song-sub-plays">${playCount} plays</span>
-          </div>
-        </div>
-      </td>
-      <td class="col-artist">${escapeHtml(artistName)}</td>
-      <td class="col-album" title="${escapeHtml(albumTitle)}">${escapeHtml(truncatedAlbum)}</td>
-      <td class="col-duration">${escapeHtml(durationText)}</td>
-      <td class="col-plays">${playCount}</td>
-      <td class="col-add">
-        <div class="dropdown">
-          <button class="dropdown-trigger is-compact" type="button" data-dropdown-trigger aria-haspopup="menu" aria-expanded="false" title="Song actions">
-            <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18" aria-hidden="true">
-              <circle cx="5" cy="12" r="1.8" />
-              <circle cx="12" cy="12" r="1.8" />
-              <circle cx="19" cy="12" r="1.8" />
-            </svg>
-          </button>
-          <div class="dropdown-menu" role="menu">
-            <button class="dropdown-item song-row-play-btn" type="button">Play</button>
-            <button class="dropdown-item song-row-play-next-btn" type="button" data-song-id="${song.id}" data-song-index="${index}" data-song-context="library">Play next</button>
-            <button class="dropdown-item song-row-queue-btn" type="button" data-song-id="${song.id}" data-song-index="${index}" data-song-context="library">Add to queue</button>
-            <div class="dropdown-sep" role="separator"></div>
-            <button class="dropdown-item add-to-playlist-btn" type="button" data-song-id="${song.id}">Add to playlist</button>
-            <button class="dropdown-item song-copy-btn" type="button" data-copy-text="${escapeHtml(copyText)}">Copy title + artist</button>
-          </div>
-        </div>
-      </td>
-    `;
-    
-    // Add event listeners
-    tr.querySelector('.play-button').addEventListener('click', () => onPlaySong(index));
+    tr.classList.add('anim-stagger-item');
+    tr.style.setProperty('--i', String(index));
+
+    tr.innerHTML = buildSongRowHtml(song, index, {
+      context: 'library',
+      showTrack: false,
+      showDrag: false,
+      showPlays: true,
+      includeRemoveFromPlaylist: false
+    });
+
+    tr.querySelector('.play-button')?.addEventListener('click', () => onPlaySong(index));
     tr.querySelector('.song-row-play-btn')?.addEventListener('click', () => onPlaySong(index));
     tr.addEventListener('dblclick', () => onPlaySong(index));
-    
+
     tbody.appendChild(tr);
   });
   
@@ -111,7 +68,7 @@ export function renderAlbums(albums, onAlbumClick) {
   grid.innerHTML = '';
   
   if (albums.length === 0) {
-    grid.innerHTML = `<div class="empty-state-content">
+    grid.innerHTML = `<div class="empty-state-content" style="grid-column: 1 / -1;">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="64" height="64">
         <circle cx="12" cy="12" r="10"/>
         <circle cx="12" cy="12" r="3"/>
@@ -122,9 +79,11 @@ export function renderAlbums(albums, onAlbumClick) {
     return;
   }
   
-  albums.forEach(album => {
+  albums.forEach((album, index) => {
     const card = document.createElement('div');
     card.className = 'album-card';
+    card.classList.add('anim-stagger-item');
+    card.style.setProperty('--i', String(index));
     const coverUrl = album.songs && album.songs[0] ? albumCoverUrl(album.songs[0].id) : '';
     const albumTitle = album.album || 'Unknown Album';
     const truncatedTitle = albumTitle.length > 25 ? albumTitle.substring(0, 25) + '...' : albumTitle;
@@ -177,24 +136,25 @@ export function renderAlbumDetail(album, onPlaySong) {
   
   album.songs.forEach((song, index) => {
     const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td class="col-track">${song.trackNumber || '-'}</td>
-      <td class="col-play">
-        <button class="play-button" data-index="${index}">
-          <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
-            <path d="M8 5v14l11-7z"/>
-          </svg>
-        </button>
-      </td>
-      <td class="col-title">${escapeHtml(song.title)}</td>
-      <td class="col-duration">${formatDuration(song.duration)}</td>
-    `;
-    
-    tr.querySelector('.play-button').addEventListener('click', () => onPlaySong(index));
+    tr.classList.add('anim-stagger-item');
+    tr.style.setProperty('--i', String(index));
+
+    tr.innerHTML = buildSongRowHtml(song, index, {
+      context: 'album',
+      showTrack: true,
+      showDrag: false,
+      showPlays: false,
+      includeRemoveFromPlaylist: false
+    });
+
+    tr.querySelector('.play-button')?.addEventListener('click', () => onPlaySong(index));
+    tr.querySelector('.song-row-play-btn')?.addEventListener('click', () => onPlaySong(index));
     tr.addEventListener('dblclick', () => onPlaySong(index));
-    
+
     tbody.appendChild(tr);
   });
+
+  setupLazyImages(tbody);
 }
 
 /**
@@ -209,7 +169,7 @@ export function renderArtists(artists, onArtistClick) {
   list.innerHTML = '';
   
   if (artists.length === 0) {
-    list.innerHTML = `<div class="empty-state-content">
+    list.innerHTML = `<div class="empty-state-content" style="grid-column: 1 / -1;">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="64" height="64">
         <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
         <circle cx="12" cy="7" r="4"/>
@@ -220,9 +180,11 @@ export function renderArtists(artists, onArtistClick) {
     return;
   }
   
-  artists.forEach(artist => {
+  artists.forEach((artist, index) => {
     const item = document.createElement('div');
     item.className = 'artist-item';
+    item.classList.add('anim-stagger-item');
+    item.style.setProperty('--i', String(index));
     item.innerHTML = `
       <div>
         <div class="artist-name">${escapeHtml(artist.name)}</div>
@@ -246,7 +208,7 @@ export function renderPlaylists(playlists) {
   
   if (!playlists || playlists.length === 0) {
     grid.innerHTML = `
-      <div class="empty-state-content">
+      <div class="empty-state-content" style="grid-column: 1 / -1;">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="64" height="64">
           <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
         </svg>
@@ -256,9 +218,11 @@ export function renderPlaylists(playlists) {
     return;
   }
   
-  (playlists || []).forEach(playlist => {
+  (playlists || []).forEach((playlist, index) => {
     const card = document.createElement('div');
     card.className = 'playlist-card';
+    card.classList.add('anim-stagger-item');
+    card.style.setProperty('--i', String(index));
     card.dataset.playlistId = playlist.id;
     card.dataset.pinned = playlist.pinned ? '1' : '0';
     card.innerHTML = `
@@ -421,7 +385,7 @@ export function renderStats(stats) {
   
   // Try to render activity heatmap (optional enhancement)
   try {
-    import('./app/enhancements.js').then(({ renderActivityHeatmap, renderTopCards }) => {
+      import('./app/uiFeatures.js').then(({ renderActivityHeatmap, renderTopCards }) => {
       // Remove existing containers first to avoid duplicates
       document.getElementById('statsHeatmap')?.remove();
       document.getElementById('statsTopCards')?.remove();
@@ -462,9 +426,9 @@ export function renderStats(stats) {
       if (topArtists.length > 0 || topAlbums.length > 0) {
         renderTopCards(topCardsContainer, { topArtists, topAlbums });
       }
-    }).catch(() => { /* enhancements not available */ });
+      }).catch(() => { /* optional UI features not available */ });
   } catch (e) {
-    // Enhancements module not available, that's okay
+      // Optional UI features module not available, that's okay
   }
 }
 
@@ -532,52 +496,17 @@ export function renderPlaylistDetail(playlist, songs) {
   // Render each song
   songs.forEach((song, index) => {
     const tr = document.createElement('tr');
-    const albumTitle = song.album || 'Unknown Album';
-    const truncatedAlbum = albumTitle.length > 30 ? albumTitle.substring(0, 30) + '...' : albumTitle;
-    const artistName = song.artist || 'Unknown Artist';
-    const copyText = `${song.title || 'Unknown'} — ${artistName}`;
-    
-    tr.innerHTML = `
-      <td class="col-drag">
-        <span class="playlist-drag-handle" draggable="true" aria-label="Drag to reorder">⋮⋮</span>
-      </td>
-      <td class="col-play">
-        <button class="play-button" data-index="${index}">
-          <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
-            <path d="M8 5v14l11-7z"/>
-          </svg>
-        </button>
-      </td>
-      <td class="col-cover">
-        <img class="song-cover" src="${songCoverUrl(song.id)}" alt="${escapeHtml(song.title || 'Unknown')}" onerror="this.style.display='none';" />
-      </td>
-      <td class="col-title">${escapeHtml(song.title || 'Unknown')}</td>
-      <td class="col-artist">${escapeHtml(artistName)}</td>
-      <td class="col-album" title="${escapeHtml(albumTitle)}">${escapeHtml(truncatedAlbum)}</td>
-      <td class="col-duration">${formatDuration(song.duration)}</td>
-      <td class="col-remove">
-        <div class="dropdown">
-          <button class="dropdown-trigger is-compact" type="button" data-dropdown-trigger aria-haspopup="menu" aria-expanded="false" title="Song actions">
-            <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18" aria-hidden="true">
-              <circle cx="5" cy="12" r="1.8" />
-              <circle cx="12" cy="12" r="1.8" />
-              <circle cx="19" cy="12" r="1.8" />
-            </svg>
-          </button>
-          <div class="dropdown-menu" role="menu">
-            <button class="dropdown-item song-row-play-btn" type="button">Play</button>
-            <button class="dropdown-item song-row-play-next-btn" type="button" data-song-id="${song.id}" data-song-index="${index}" data-song-context="playlist">Play next</button>
-            <button class="dropdown-item song-row-queue-btn" type="button" data-song-id="${song.id}" data-song-index="${index}" data-song-context="playlist">Add to queue</button>
-            <div class="dropdown-sep" role="separator"></div>
-            <button class="dropdown-item add-to-playlist-btn" type="button" data-song-id="${song.id}">Add to playlist</button>
-            <button class="dropdown-item song-copy-btn" type="button" data-copy-text="${escapeHtml(copyText)}">Copy title + artist</button>
-            <div class="dropdown-sep" role="separator"></div>
-            <button class="dropdown-item is-danger remove-from-playlist-btn" type="button" data-song-id="${song.id}">Remove from playlist</button>
-          </div>
-        </div>
-      </td>
-    `;
-    
+    tr.classList.add('anim-stagger-item');
+    tr.style.setProperty('--i', String(index));
+
+    tr.innerHTML = buildSongRowHtml(song, index, {
+      context: 'playlist',
+      showTrack: false,
+      showDrag: true,
+      showPlays: false,
+      includeRemoveFromPlaylist: true
+    });
+
     tbody.appendChild(tr);
   });
   
@@ -604,6 +533,8 @@ export function renderPlaylistDetail(playlist, songs) {
       }
     });
   });
+
+  setupLazyImages(tbody);
 
   // Drag-and-drop reordering (handle-only)
   let draggingIndex = null;

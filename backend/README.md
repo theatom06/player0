@@ -1,75 +1,121 @@
-# Backend (API + scanner)
+# Player 0 Backend
 
-This folder contains the Bun + Express server that powers Player 0.
+Bun + Express server providing:
 
-## Run
+- Library scanning (reads tags, cover art, optional BPM/key tagging)
+- JSON storage (`backend/data/`)
+- Audio streaming (range requests)
+- REST API under `/api`
+
+## Requirements
+
+- Bun
+- Read access to your music directories
+
+Optional:
+- `aubio-tools` for automatic BPM/key detection
+
+## Install & run
 
 From the repository root:
 
 ```bash
-# Install deps
 bun install --cwd backend
-
-# Start server
 bun run --cwd backend start
-
-# Dev/watch mode
-bun run --cwd backend dev
-
-# Scan library
-bun run --cwd backend scan
-
-# Build for production
-bun run --cwd backend build
 ```
 
-Server defaults to `http://localhost:3000`.
+Dev/watch mode:
 
-## Features
+```bash
+bun run --cwd backend dev
+```
 
-- **Request logging** (`logger.js`) - Colored console output with timestamps and request tracking
-- **Rate limiting** - 200 requests/minute per IP with automatic `X-RateLimit-*` headers
-- **Search suggestions API** - `/api/suggestions` endpoint for autocomplete
-- **Security headers** - HSTS, XSS protection, clickjacking prevention
+Trigger a scan:
+
+```bash
+bun run --cwd backend scan
+```
+
+The server listens on `PORT` (env) or `backend/config.json` (`port`), falling back to `3000`.
 
 ## Configuration
 
 Edit `backend/config.json`:
 
-- `musicDirectories`: array of folders to scan
-- `supportedFormats`: file extensions allowed
-- `dataDirectory`: where JSON data is stored
+- `musicDirectories`: folders to scan
+- `supportedFormats`: allowed extensions
+- `dataDirectory`: where JSON files are stored
 - `host` / `port`: bind address
 
-## API Endpoints
+Important:
+- Treat `dataDirectory` as persistent state (back it up).
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/api/songs` | GET | List all songs |
-| `/api/songs/:id` | GET | Get song by ID |
-| `/api/search` | GET | Search songs (query params: `q`, `artist`, `album`, `genre`, `year`) |
-| `/api/suggestions` | GET | **NEW** Search autocomplete (query params: `q`, `limit`) |
-| `/api/albums` | GET | List all albums |
-| `/api/albums/:artist/:album` | GET | Get album details |
-| `/api/artists` | GET | List all artists |
-| `/api/playlists` | GET/POST | List or create playlists |
-| `/api/playlists/:id` | GET/PUT/DELETE | Playlist CRUD |
-| `/api/stream/:id` | GET | Stream audio (supports range requests) |
-| `/api/cover/:id` | GET | Get album artwork |
-| `/api/play/:id` | POST | Record a play for statistics |
-| `/api/history` | GET | Get play history |
-| `/api/stats` | GET | Get library statistics |
-| `/api/scan` | POST | Trigger library scan |
+### Config endpoint
 
-## Files
+Player 0 can edit `backend/config.json` from the Settings page via:
 
-- `server.js` - Main Express server with all API routes
-- `scanner.js` - Music directory scanner with metadata extraction
-- `storage.js` - JSON-based data persistence
-- `logger.js` - Request logging and rate limiting middleware
-- `build.js` - Production build script (CSS/JS minification)
-- `config.json` - Server configuration
+- `GET /api/config`
+- `PUT /api/config`
 
-## API config notes
+This is intended for a device-hosted setup (same device / same network). If you expose the backend publicly, protect these endpoints behind your network or reverse proxy.
 
-See `backend/API_CONFIG.md`.
+## API overview
+
+Common endpoints:
+
+- `GET /api/songs`
+- `GET /api/songs/:id`
+- `GET /api/search`
+- `GET /api/suggestions`
+- `GET /api/albums`
+- `GET /api/albums/:artist/:album`
+- `GET /api/artists`
+- `GET /api/playlists` / `POST /api/playlists`
+- `GET|PUT|DELETE /api/playlists/:id`
+- `GET /api/stream/:id` (range requests)
+- `GET /api/cover/:id`
+- `POST /api/play/:id`
+- `GET /api/history`
+- `GET /api/stats`
+- `POST /api/scan`
+
+API base URL notes (hosting frontend separately): see [backend/API_CONFIG.md](API_CONFIG.md).
+
+## Optional: aubio BPM/key tagging
+
+On Ubuntu/Debian:
+
+```bash
+sudo apt-get update
+sudo apt-get install -y aubio-tools
+```
+
+If installed, the scanner can detect BPM/key for MP3s missing those tags and write TBPM/TKEY.
+
+## Build frontend assets
+
+```bash
+bun run --cwd backend build
+```
+
+Outputs `dist/` at the repo root.
+
+## Production deployment
+
+Recommended:
+
+1. Run the backend (this folder) as the API + streaming server.
+2. Serve `dist/` from a static server.
+3. Reverse-proxy `/api/*` to the backend.
+
+Notes:
+- Ensure your proxy supports range requests for `/api/stream/*`.
+
+## Key files
+
+- `server.js`: Express app + routes
+- `scanner.js`: library scanner
+- `storage.js`: JSON persistence
+- `logger.js`: logging + rate limiting
+- `build.js`: frontend build into `dist/`
+- `config.json`: server config

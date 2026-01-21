@@ -26,6 +26,18 @@ export function setupModal() {
     };
   }
 
+  // BPM tag modal (open is handled by navigation.js; we wire close UX here)
+  const bpmModal = document.getElementById('bpmTagModal');
+  const closeBpm = document.getElementById('closeBpmTagModal');
+  const cancelBpm = document.getElementById('cancelBpmTag');
+  if (closeBpm && bpmModal) closeBpm.onclick = () => { bpmModal.style.display = 'none'; };
+  if (cancelBpm && bpmModal) cancelBpm.onclick = () => { bpmModal.style.display = 'none'; };
+  if (bpmModal) {
+    bpmModal.onclick = (e) => {
+      if (e.target?.id === 'bpmTagModal') bpmModal.style.display = 'none';
+    };
+  }
+
   const createFromAdd = document.getElementById('createNewPlaylistFromAdd');
   if (createFromAdd && addToPlaylistModal) {
     createFromAdd.onclick = () => {
@@ -67,22 +79,27 @@ export function setupModal() {
       if (e.target?.id === 'statsListModal') statsListModal.style.display = 'none';
     };
   }
+
+  // Sleep timer modal (open/close is handled by player.js; we just wire close UX)
+  const sleepTimerModal = document.getElementById('sleepTimerModal');
+  const closeSleepTimerModalBtn = document.getElementById('closeSleepTimerModal');
+  if (sleepTimerModal) {
+    sleepTimerModal.onclick = (e) => {
+      if (e.target?.id === 'sleepTimerModal') sleepTimerModal.style.display = 'none';
+    };
+  }
+  if (closeSleepTimerModalBtn && sleepTimerModal) {
+    closeSleepTimerModalBtn.onclick = () => {
+      sleepTimerModal.style.display = 'none';
+    };
+  }
 }
 
 export function closeAllModals() {
-  const ids = ['playlistModal', 'addToPlaylistModal', 'keyboardShortcutsModal', 'statsListModal', 'nowPlayingFullscreen'];
+  const ids = ['playlistModal', 'addToPlaylistModal', 'bpmTagModal', 'keyboardShortcutsModal', 'statsListModal', 'sleepTimerModal'];
   ids.forEach((id) => {
     const el = document.getElementById(id);
     if (!el) return;
-
-    // Fullscreen now playing needs extra cleanup.
-    if (id === 'nowPlayingFullscreen') {
-      el.classList.remove('is-open');
-      el.setAttribute('aria-hidden', 'true');
-      document.body.classList.remove('npfs-open');
-      el.style.display = 'none';
-      return;
-    }
 
     el.style.display = 'none';
   });

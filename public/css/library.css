@@ -30,6 +30,29 @@
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
 
+.song-table thead th[data-sort-key] {
+  cursor: pointer;
+  user-select: none;
+}
+
+.song-table thead th[data-sort-key]:hover {
+  color: var(--text-primary);
+}
+
+.song-table thead th.is-sorted {
+  color: var(--text-primary);
+}
+
+.song-table thead th.is-sorted::after {
+  content: ' \2191';
+  opacity: 0.7;
+  font-weight: 800;
+}
+
+.song-table thead th.is-sorted.is-sorted-desc::after {
+  content: ' \2193';
+}
+
 .song-table tbody tr {
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
   position: relative;
@@ -221,6 +244,7 @@
 
 #playlistDetailView .song-table-container {
   background: var(--bg-dark);
+  background-image: none;
   border-radius: 12px;
   padding: 0;
   overflow: hidden;
@@ -233,6 +257,7 @@
 
 #playlistDetailView .song-table thead {
   background: var(--bg-medium);
+  background-image: none;
 }
 
 #playlistDetailView .song-table tbody tr {
@@ -336,7 +361,7 @@
 }
 
 .play-button:hover {
-  background: rgba(122, 162, 255, 0.14);
+  background: color-mix(in srgb, var(--primary) 14%, transparent);
   transform: scale(1.2);
 }
 
@@ -372,7 +397,7 @@ img.loaded {
 
 .song-cover.lazy,
 .album-artwork.lazy {
-  background: linear-gradient(135deg, var(--bg-light) 0%, var(--bg-dark) 100%);
+  background: var(--bg-light);
 }
 
 /* Hide broken images gracefully */

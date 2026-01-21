@@ -27,7 +27,7 @@
 ```
 public/
   js/
-    API.js       - All API calls (< 500 lines)
+    api.js       - All API calls (< 500 lines)
     state.js     - App state management (< 200 lines)
     player.js    - Audio player logic (< 400 lines)
     ui.js        - DOM rendering (< 800 lines, split if needed)
@@ -50,7 +50,7 @@ public/
 ### Responsibilities
 - **app.js** - Orchestrator only, wires everything together
 - **ui.js** - Pure rendering, no business logic
-- **API.js** - All server communication, caching
+- **api.js** - All server communication, caching
 - **state.js** - Single source of truth for app state
 - **player.js** - Audio control, playback logic
 - **utils.js** - Pure functions, no side effects

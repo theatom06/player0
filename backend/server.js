@@ -27,16 +27,22 @@ import { fileURLToPath } from 'url';
 import fs from 'fs';
 import Storage from './storage.js';
 import MusicScanner from './scanner.js';
-import logger, { httpLogger, rateLimiter } from './logger.js';
+import logger, { httpLogger } from './logger.js';
 import configData from './config.json' with { type: 'json' };
+import { resolveLyricsForSong } from './lyrics/lyricsService.js';
+import { registerConfigRoutes } from './routes/configRoutes.js';
 
 // ESM __dirname equivalent
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+const CONFIG_FILE_PATH = path.join(__dirname, 'config.json');
+// Mutable runtime config so some settings (like rate limiting) can apply immediately.
+const runtimeConfig = JSON.parse(JSON.stringify(configData));
+
 // Initialize Express app and Storage
 const app = express();
-const storage = new Storage(configData.dataDirectory);
+const storage = new Storage(runtimeConfig.dataDirectory);
 
 /**
  * Security Headers Middleware
@@ -78,16 +84,9 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
  */
 app.use(httpLogger);
 
-/**
- * Rate Limiting
- * Prevents abuse by limiting requests per IP
- * Default: 200 requests per minute
- */
-app.use('/api', rateLimiter({ 
-  windowMs: 60 * 1000, 
-  max: 200,
-  message: 'Too many API requests, please try again later'
-}));
+// Config routes (device-hosted: editable from Settings)
+// Register these before rate limiting so you can always recover from bad limiter settings.
+registerConfigRoutes(app, { runtimeConfig, configFilePath: CONFIG_FILE_PATH });
 
 /**
  * MIME Type Middleware
@@ -148,6 +147,105 @@ app.get('/api/songs/:id', async (req, res) => {
     } else {
       res.status(404).json({ error: 'Song not found' });
     }
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ============================================
+// API Routes - Lyrics
+// ============================================
+
+/**
+ * GET /api/lyrics/:id
+ * Resolve synced lyrics (LRC) for a song.
+ * Flow: local .lrc -> embedded tags. (No network fetch.)
+ * Query params:
+ * - force=1 : re-check local file and tags
+ */
+app.get('/api/lyrics/:id', async (req, res) => {
+  try {
+    if (!/^[a-zA-Z0-9-]+$/.test(req.params.id)) {
+      return res.status(400).json({ error: 'Invalid song ID format' });
+    }
+
+    const song = await storage.getSongById(req.params.id);
+    if (!song || !song.filePath) {
+      return res.status(404).json({ error: 'Song not found' });
+    }
+
+    // "force" is accepted for backwards-compat but lyrics are local/tags only.
+    const result = await resolveLyricsForSong({ storage, song });
+
+    if (!result.ok) {
+      return res.status(result.status || 404).json({ error: result.error || 'Lyrics not found' });
+    }
+
+    return res.json({
+      songId: song.id,
+      source: result.source,
+      synced: Boolean(result.synced),
+      lrcPath: result.lrcPath || null,
+      lrc: result.lrc || ''
+    });
+  } catch (error) {
+    console.error('Error resolving lyrics:', error);
+    return res.status(500).json({ error: 'Error resolving lyrics' });
+  }
+});
+
+/**
+ * PATCH /api/songs/:id
+ * Update editable song metadata (currently: bpm, key)
+ * @body {number|null} bpm - Beats per minute (30-300) or null to clear
+ * @body {string|null} key - Musical key (short string) or null to clear
+ */
+app.patch('/api/songs/:id', async (req, res) => {
+  try {
+    // Validate ID format (alphanumeric and hyphens only)
+    if (!/^[a-zA-Z0-9-]+$/.test(req.params.id)) {
+      return res.status(400).json({ error: 'Invalid song ID format' });
+    }
+
+    const song = await storage.getSongById(req.params.id);
+    if (!song) {
+      return res.status(404).json({ error: 'Song not found' });
+    }
+
+    const updates = {};
+
+    if (Object.prototype.hasOwnProperty.call(req.body, 'bpm')) {
+      const bpmRaw = req.body.bpm;
+      if (bpmRaw === null || bpmRaw === '') {
+        updates.bpm = null;
+      } else {
+        const bpm = Number(bpmRaw);
+        if (!Number.isFinite(bpm) || bpm < 30 || bpm > 300) {
+          return res.status(400).json({ error: 'Invalid bpm (expected number 30-300, or null)' });
+        }
+        updates.bpm = Math.round(bpm);
+      }
+    }
+
+    if (Object.prototype.hasOwnProperty.call(req.body, 'key')) {
+      const keyRaw = req.body.key;
+      if (keyRaw === null || keyRaw === '') {
+        updates.key = null;
+      } else if (typeof keyRaw !== 'string') {
+        return res.status(400).json({ error: 'Invalid key (expected string or null)' });
+      } else {
+        const k = String(keyRaw).trim();
+        updates.key = k ? k.slice(0, 32) : null;
+      }
+    }
+
+    const ok = await storage.updateSong(req.params.id, updates);
+    if (!ok) {
+      return res.status(500).json({ error: 'Failed to update song' });
+    }
+
+    const updated = await storage.getSongById(req.params.id);
+    res.json(updated);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -780,6 +878,122 @@ app.get('/api/stats', async (req, res) => {
   }
 });
 
+/**
+ * POST /api/stats/import
+ * Import song-level play stats from a CSV previously exported by the UI.
+ * Body: { csv: string }
+ * Updates: playCount, lastPlayed
+ */
+app.post('/api/stats/import', async (req, res) => {
+  try {
+    const csvText = String(req.body?.csv || '');
+    if (!csvText.trim()) {
+      return res.status(400).json({ error: 'Missing csv' });
+    }
+
+    function parseCsvLine(line) {
+      const fields = [];
+      let field = '';
+      let inQuotes = false;
+
+      for (let i = 0; i < line.length; i++) {
+        const ch = line[i];
+
+        if (inQuotes) {
+          if (ch === '"') {
+            if (line[i + 1] === '"') {
+              field += '"';
+              i++;
+            } else {
+              inQuotes = false;
+            }
+          } else {
+            field += ch;
+          }
+          continue;
+        }
+
+        if (ch === '"') {
+          inQuotes = true;
+          continue;
+        }
+        if (ch === ',') {
+          fields.push(field);
+          field = '';
+          continue;
+        }
+        field += ch;
+      }
+
+      fields.push(field);
+      return fields;
+    }
+
+    const lines = csvText
+      .replace(/\r\n?/g, '\n')
+      .split('\n')
+      .filter((l) => l.trim().length > 0);
+
+    if (lines.length < 2) {
+      return res.status(400).json({ error: 'CSV has no data rows' });
+    }
+
+    const header = parseCsvLine(lines[0]).map((h) => String(h || '').trim());
+    const idxId = header.indexOf('id');
+    const idxPlayCount = header.indexOf('playCount');
+    const idxLastPlayed = header.indexOf('lastPlayed');
+    if (idxId < 0 || idxPlayCount < 0) {
+      return res.status(400).json({ error: 'CSV header must include id and playCount' });
+    }
+
+    const songs = await storage.getSongs();
+    const byId = new Map(songs.map((s) => [String(s.id), s]));
+
+    let updatedCount = 0;
+    let skippedCount = 0;
+
+    for (let i = 1; i < lines.length; i++) {
+      const row = parseCsvLine(lines[i]);
+      const id = String(row[idxId] || '').trim();
+      if (!id) {
+        skippedCount++;
+        continue;
+      }
+
+      const song = byId.get(id);
+      if (!song) {
+        skippedCount++;
+        continue;
+      }
+
+      const playCountRaw = row[idxPlayCount];
+      const playCount = Number.parseInt(String(playCountRaw ?? '').trim(), 10);
+      if (!Number.isFinite(playCount) || playCount < 0) {
+        skippedCount++;
+        continue;
+      }
+
+      let lastPlayed = null;
+      if (idxLastPlayed >= 0) {
+        const lp = String(row[idxLastPlayed] ?? '').trim();
+        lastPlayed = lp || null;
+      }
+
+      song.playCount = playCount;
+      if (idxLastPlayed >= 0) {
+        song.lastPlayed = lastPlayed;
+      }
+
+      updatedCount++;
+    }
+
+    await storage.saveSongs(songs);
+    res.json({ updatedCount, skippedCount });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // ============================================
 // API Routes - Library Management
 // ============================================
@@ -816,12 +1030,12 @@ app.get('/', (req, res) => {
 // Server Startup
 // ============================================
 
-const PORT = configData.port || 3000;
-const HOST = configData.host || '0.0.0.0';
+const PORT = Number(process.env.PORT) || runtimeConfig.port || 3000;
+const HOST = runtimeConfig.host || '0.0.0.0';
 
 app.listen(PORT, HOST, () => {
   console.log(`🎵 Player 0 Server running on http://${HOST}:${PORT}`);
-  console.log(`📁 Data directory: ${configData.dataDirectory}`);
-  console.log(`🎶 Music directories: ${configData.musicDirectories.join(', ')}`);
+  console.log(`📁 Data directory: ${runtimeConfig.dataDirectory}`);
+  console.log(`🎶 Music directories: ${(runtimeConfig.musicDirectories || []).join(', ')}`);
   console.log(`\n💡 Run 'bun run scan' to scan your music library`);
 });

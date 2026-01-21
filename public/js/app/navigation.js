@@ -1,8 +1,10 @@
 import { switchView } from './views.js';
 import { scanLibrary } from './scan.js';
 import { removeFromPlaylist } from './playlists.js';
-import { allSongs, currentSongs, enqueueSongs, playNextSongs } from '../state.js';
+import { updateSong } from '../api.js';
+import { allSongs, currentSongs, enqueueSongs, playNextSongs, setAllSongs, setCurrentSongs } from '../state.js';
 import { updateQueue } from '../player.js';
+import { renderSongs } from '../ui.js';
 
 async function copyToClipboard(text) {
   const value = String(text || '').trim();
@@ -145,5 +147,101 @@ export function setupNavigation() {
       playNextSongs(song);
       updateQueue();
     }
+
+    if (e.target.closest('.song-edit-bpm-btn')) {
+      const btn = e.target.closest('.song-edit-bpm-btn');
+      const song = resolveSongFromActionButton(btn);
+      if (!song) return;
+      openBpmTagModal(song);
+    }
   });
+
+  wireBpmTagModalSave();
+}
+
+function openBpmTagModal(song) {
+  const modal = document.getElementById('bpmTagModal');
+  const label = document.getElementById('bpmTagSongLabel');
+  const input = document.getElementById('bpmTagValue');
+  if (!modal || !input) return;
+
+  modal.dataset.songId = String(song.id || '');
+  modal.dataset.songTitle = String(song.title || '');
+
+  const artist = String(song.artist || '').trim();
+  const title = String(song.title || 'Unknown').trim();
+  if (label) {
+    label.textContent = artist ? `${title} — ${artist}` : title;
+  }
+
+  input.value = Number.isFinite(Number(song.bpm)) ? String(Math.round(Number(song.bpm))) : '';
+  modal.style.display = 'flex';
+  input.focus();
+  input.select?.();
+}
+
+function wireBpmTagModalSave() {
+  const modal = document.getElementById('bpmTagModal');
+  const saveBtn = document.getElementById('saveBpmTag');
+  const input = document.getElementById('bpmTagValue');
+  if (!modal || !saveBtn || !input) return;
+  if (saveBtn.dataset.wired) return;
+  saveBtn.dataset.wired = '1';
+
+  const save = async () => {
+    const songId = String(modal.dataset.songId || '').trim();
+    if (!songId) return;
+
+    const raw = String(input.value || '').trim();
+    const bpm = raw ? Number(raw) : null;
+    if (raw && (!Number.isFinite(bpm) || bpm < 30 || bpm > 300)) {
+      alert('BPM must be between 30 and 300');
+      return;
+    }
+
+    saveBtn.disabled = true;
+
+    try {
+      const updated = await updateSong(songId, { bpm: raw ? Math.round(bpm) : null });
+      applySongPatchToClientState(updated);
+      modal.style.display = 'none';
+
+      // Refresh current view if needed.
+      if (window.currentPlaylistId && window.location.hash.startsWith('#/playlist/')) {
+        void window.loadPlaylistDetail?.(window.currentPlaylistId);
+      } else if (document.getElementById('songTableBody')) {
+        // Re-render library table in place.
+        renderSongs(currentSongs, window.playSongFromList || (() => {}));
+      }
+    } catch (err) {
+      console.error('BPM update failed:', err);
+      alert('Failed to update BPM: ' + (err?.message || err));
+    } finally {
+      saveBtn.disabled = false;
+    }
+  };
+
+  saveBtn.addEventListener('click', () => { void save(); });
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      void save();
+    }
+  });
+}
+
+function applySongPatchToClientState(updatedSong) {
+  if (!updatedSong?.id) return;
+  const id = updatedSong.id;
+
+  const patchList = (list) => (Array.isArray(list)
+    ? list.map((s) => (s?.id === id ? { ...s, ...updatedSong } : s))
+    : list);
+
+  setAllSongs(patchList(allSongs));
+  setCurrentSongs(patchList(currentSongs));
+
+  if (Array.isArray(window.currentPlaylistSongs)) {
+    window.currentPlaylistSongs = patchList(window.currentPlaylistSongs);
+  }
 }

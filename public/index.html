@@ -7,9 +7,9 @@
   <title>Player 0</title>
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <link rel="stylesheet" href="main.css">
-  <link rel="stylesheet" href="css/enhancements.css">
 </head>
 <body>
+
   <!-- 
     ============================================
     Player 0 - Main Application Structure
@@ -38,62 +38,34 @@
       <!-- Navigation Menu -->
       <div class="nav-menu">
         <a href="#" class="nav-item active" data-view="library">
-          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M3 19V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
-            <path d="M7 7h10M7 12h10M7 17h6"/>
-          </svg>
+          <span class="material-symbols-rounded icon" aria-hidden="true">library_music</span>
           <span>Library</span>
         </a>
         <a href="#" class="nav-item" data-view="albums">
-          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="10"/>
-            <circle cx="12" cy="12" r="3"/>
-          </svg>
+          <span class="material-symbols-rounded icon" aria-hidden="true">album</span>
           <span>Albums</span>
         </a>
         <a href="#" class="nav-item" data-view="artists">
-          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M12 2a10 10 0 0 1 10 10 10 10 0 0 1-10 10A10 10 0 0 1 2 12 10 10 0 0 1 12 2z"/>
-            <path d="M9 9h.01M15 9h.01M9 15s1.5 2 3 2 3-2 3-2"/>
-          </svg>
+          <span class="material-symbols-rounded icon" aria-hidden="true">person</span>
           <span>Artists</span>
         </a>
         <a href="#" class="nav-item" data-view="playlists">
-          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>
-          </svg>
+          <span class="material-symbols-rounded icon" aria-hidden="true">queue_music</span>
           <span>Playlists</span>
         </a>
         <a href="#" class="nav-item" data-view="stats">
-          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M3 3v18h18"/>
-            <path d="M7 16V9M12 16V6M17 16v-4"/>
-          </svg>
+          <span class="material-symbols-rounded icon" aria-hidden="true">bar_chart</span>
           <span>Statistics</span>
         </a>
         <a href="#" class="nav-item" data-view="settings">
-          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M4 21v-7"/>
-            <path d="M4 10V3"/>
-            <path d="M12 21v-9"/>
-            <path d="M12 8V3"/>
-            <path d="M20 21v-5"/>
-            <path d="M20 12V3"/>
-            <path d="M2 14h4"/>
-            <path d="M10 12h4"/>
-            <path d="M18 16h4"/>
-          </svg>
+          <span class="material-symbols-rounded icon" aria-hidden="true">settings</span>
           <span>Settings</span>
         </a>
       </div>
       
       <div class="sidebar-footer">
         <button class="scan-button" id="scanButton">
-          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="10"/>
-            <circle cx="12" cy="12" r="3"/>
-            <path d="M12 2v4M12 18v4M2 12h4M18 12h4"/>
-          </svg>
+          <span class="material-symbols-rounded icon" aria-hidden="true">sync</span>
           <span>Scan Library</span>
         </button>
       </div>
@@ -110,10 +82,7 @@
         </a>
 
         <button type="button" class="nav-item nav-item--action" data-action="search" aria-label="Search">
-          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="11" cy="11" r="8"/>
-            <path d="m21 21-4.35-4.35"/>
-          </svg>
+          <span class="material-symbols-rounded icon" aria-hidden="true">search</span>
           <span>Search</span>
         </button>
 
@@ -168,27 +137,16 @@
         <div class="search-bar">
           <input type="text" id="searchInput" placeholder="Search songs, artists, albums..." />
           <button class="search-button">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
-              <circle cx="11" cy="11" r="8"/>
-              <path d="m21 21-4.35-4.35"/>
-            </svg>
+            <span class="material-symbols-rounded" aria-hidden="true">search</span>
           </button>
           <button class="icon-button" id="advancedSearchToggle" title="Advanced Search">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
-              <circle cx="11" cy="11" r="8"/>
-              <path d="m21 21-4.35-4.35"/>
-              <line x1="11" y1="8" x2="11" y2="14"/>
-              <line x1="8" y1="11" x2="14" y2="11"/>
-            </svg>
+            <span class="material-symbols-rounded" aria-hidden="true">tune</span>
           </button>
         </div>
         <!-- Mini player is moved here on mobile via JS -->
         <div id="miniPlayerSlot" class="mini-player-slot"></div>
         <button class="icon-button" id="keyboardShortcutsBtn" title="Keyboard Shortcuts">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
-            <rect x="2" y="4" width="20" height="16" rx="2"/>
-            <path d="M6 8h.01M10 8h.01M14 8h.01M18 8h.01M8 12h.01M12 12h.01M16 12h.01M7 16h10"/>
-          </svg>
+          <span class="material-symbols-rounded" aria-hidden="true">keyboard</span>
         </button>
       </header>
 
@@ -227,15 +185,12 @@
       <div class="np-header">
         <h3>Now Playing</h3>
         <div class="np-header-actions">
-          <button class="np-icon-btn" id="openNowPlayingFullscreen" type="button" aria-label="Open fullscreen now playing" title="Fullscreen">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20" aria-hidden="true">
-              <path d="M8 3H5a2 2 0 0 0-2 2v3"/>
-              <path d="M16 3h3a2 2 0 0 1 2 2v3"/>
-              <path d="M8 21H5a2 2 0 0 1-2-2v-3"/>
-              <path d="M16 21h3a2 2 0 0 0 2-2v-3"/>
-            </svg>
+          <button class="np-icon-btn" id="sleepTimerButton" type="button" aria-label="Sleep timer" title="Sleep timer">
+            <span class="material-symbols-rounded" aria-hidden="true">bedtime</span>
           </button>
-          <button class="close-sidebar" id="closeSidebar" type="button" aria-label="Close">✕</button>
+          <button class="close-sidebar" id="closeSidebar" type="button" aria-label="Close" title="Close">
+            <span class="material-symbols-rounded" aria-hidden="true">close</span>
+          </button>
         </div>
       </div>
       
@@ -297,10 +252,31 @@
         <input type="range" id="volumeSlider" min="0" max="100" value="100" />
       </div>
 
+      <div class="np-lyrics" aria-label="Lyrics">
+        <div class="np-lyrics-header">
+          <h4 id="lyricsTitle">Lyrics</h4>
+          <div class="np-lyrics-actions">
+            <button class="np-icon-btn" id="lyricsCollapseBtn" type="button" title="Collapse lyrics" aria-label="Collapse lyrics">
+              <span class="material-symbols-rounded" aria-hidden="true">expand_more</span>
+            </button>
+            <button class="np-icon-btn" id="lyricsRefreshBtn" type="button" title="Reload lyrics" aria-label="Reload lyrics">
+              <span class="material-symbols-rounded" aria-hidden="true">refresh</span>
+            </button>
+          </div>
+        </div>
+        <div class="np-lyrics-meta" id="lyricsSource"></div>
+        <div class="lyrics-container" id="lyricsContainer">
+          <div class="lyrics-empty">Play a song to load lyrics</div>
+        </div>
+      </div>
+
       <div class="np-queue">
         <div class="np-queue-header">
           <h4>Queue</h4>
-          <button class="np-icon-btn" id="toggleQueueExpanded" type="button" aria-expanded="false">More</button>
+          <div class="np-queue-actions">
+            <button class="np-icon-btn" id="clearQueueButton" type="button" title="Clear upcoming" aria-label="Clear upcoming">Clear</button>
+            <button class="np-icon-btn" id="toggleQueueExpanded" type="button" aria-expanded="false">More</button>
+          </div>
         </div>
         <div class="queue-list" id="queueList"></div>
       </div>
@@ -312,37 +288,75 @@
     <div class="mini-progress-bar">
       <div class="mini-progress-fill" id="miniProgressFill"></div>
     </div>
+    <img class="mini-artwork" id="miniArtwork" alt="" loading="lazy" decoding="async" />
     <div class="mini-player-info">
       <span class="mini-title" id="miniTitle">No song playing</span>
       <span class="mini-artist" id="miniArtist"></span>
+      <span class="mini-sleep" id="miniSleepTimer" aria-label="Sleep timer" title="Sleep timer"></span>
     </div>
     <div class="mini-controls">
-      <button class="mini-btn" id="miniPrev">
-        <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
-          <path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/>
-        </svg>
+      <button class="mini-btn" id="miniPrev" type="button" aria-label="Previous">
+        <span class="material-symbols-rounded" aria-hidden="true">skip_previous</span>
       </button>
-      <button class="mini-btn" id="miniPlayPause">
-        <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
-          <path d="M8 5v14l11-7z"/>
-        </svg>
+      <button class="mini-btn" id="miniPlayPause" type="button" aria-label="Play/Pause">
+        <span class="material-symbols-rounded" aria-hidden="true">play_arrow</span>
       </button>
-      <button class="mini-btn" id="miniNext">
-        <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
-          <path d="M6 18l8.5-6L6 6v12zm10-12v12h2V6h-2z"/>
-        </svg>
+      <button class="mini-btn" id="miniNext" type="button" aria-label="Next">
+        <span class="material-symbols-rounded" aria-hidden="true">skip_next</span>
       </button>
-      <button class="mini-btn" id="miniQueue" title="Queue" aria-label="Open queue">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
-          <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>
-        </svg>
+      <button class="mini-btn" id="miniQueue" type="button" title="Queue" aria-label="Open queue">
+        <span class="material-symbols-rounded" aria-hidden="true">queue_music</span>
       </button>
     </div>
-    <button class="mini-expand" id="expandSidebar">
-      <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
-        <path d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z"/>
-      </svg>
+    <button class="mini-expand" id="expandSidebar" type="button" aria-label="Open player">
+      <span class="material-symbols-rounded" aria-hidden="true">expand_less</span>
     </button>
+  </div>
+
+  <!-- Sleep Timer Modal -->
+  <div class="modal" id="sleepTimerModal" style="display: none;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Sleep timer</h3>
+        <button class="modal-close" id="closeSleepTimerModal" type="button" aria-label="Close" title="Close">
+          <span class="material-symbols-rounded" aria-hidden="true">close</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <label for="sleepTimerMinutes">Minutes</label>
+        <input type="number" id="sleepTimerMinutes" min="1" step="1" placeholder="e.g. 30" />
+        <div class="sleep-timer-presets">
+          <button class="btn-secondary" id="sleepPreset15" type="button">15</button>
+          <button class="btn-secondary" id="sleepPreset30" type="button">30</button>
+          <button class="btn-secondary" id="sleepPreset60" type="button">60</button>
+        </div>
+
+        <div class="sleep-timer-grid">
+          <div class="sleep-timer-row">
+            <input type="checkbox" id="sleepStopAfterTrack" />
+            <label for="sleepStopAfterTrack">Stop after current track (when timer ends)</label>
+          </div>
+          <div class="sleep-timer-row">
+            <input type="checkbox" id="sleepFadeEnabled" />
+            <label for="sleepFadeEnabled">Fade out</label>
+          </div>
+          <div class="sleep-timer-row sleep-timer-row--inline">
+            <label for="sleepFadeSeconds" class="sleep-timer-inline-label">Fade seconds</label>
+            <input type="number" id="sleepFadeSeconds" min="1" max="60" step="1" placeholder="e.g. 10" />
+          </div>
+          <div class="sleep-timer-row sleep-timer-row--inline">
+            <label for="sleepEndAtTime" class="sleep-timer-inline-label">End at</label>
+            <input type="time" id="sleepEndAtTime" />
+            <button class="btn-secondary" id="sleepSetEndAt" type="button">Set</button>
+          </div>
+        </div>
+        <div class="sleep-timer-status" id="sleepTimerStatus"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" id="cancelSleepTimer" type="button">Cancel timer</button>
+        <button class="btn-primary" id="startSleepTimer" type="button">Start</button>
+      </div>
+    </div>
   </div>
 
   <!-- Modal for Create Playlist -->
@@ -350,7 +364,9 @@
     <div class="modal-content">
       <div class="modal-header">
         <h3>Create New Playlist</h3>
-        <button class="modal-close" id="closePlaylistModal">✕</button>
+        <button class="modal-close" id="closePlaylistModal" type="button" aria-label="Close" title="Close">
+          <span class="material-symbols-rounded" aria-hidden="true">close</span>
+        </button>
       </div>
       <div class="modal-body">
         <label for="playlistName">Playlist Name</label>
@@ -370,7 +386,9 @@
     <div class="modal-content">
       <div class="modal-header">
         <h3>Add to Playlist</h3>
-        <button class="modal-close" id="closeAddToPlaylistModal">✕</button>
+        <button class="modal-close" id="closeAddToPlaylistModal" type="button" aria-label="Close" title="Close">
+          <span class="material-symbols-rounded" aria-hidden="true">close</span>
+        </button>
       </div>
       <div class="modal-body">
         <div id="playlistSelectionList" class="playlist-selection-list">
@@ -380,12 +398,38 @@
     </div>
   </div>
 
+  <!-- Modal for BPM Tagging -->
+  <div class="modal" id="bpmTagModal" style="display: none;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Edit BPM</h3>
+        <button class="modal-close" id="closeBpmTagModal" type="button" aria-label="Close" title="Close">
+          <span class="material-symbols-rounded" aria-hidden="true">close</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div id="bpmTagSongLabel" style="margin: 0 0 10px 0; color: var(--text-secondary); font-size: 13px;"></div>
+        <label for="bpmTagValue">BPM</label>
+        <input type="number" id="bpmTagValue" min="30" max="300" step="1" placeholder="e.g. 128" inputmode="numeric" />
+        <div style="margin-top: 10px; color: var(--text-secondary); font-size: 12px;">
+          Tip: leave blank to clear.
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" id="cancelBpmTag" type="button">Cancel</button>
+        <button class="btn-primary" id="saveBpmTag" type="button">Save</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Modal for Keyboard Shortcuts -->
   <div class="modal" id="keyboardShortcutsModal" style="display: none;">
     <div class="modal-content shortcuts-modal">
       <div class="modal-header">
         <h3>Keyboard Shortcuts</h3>
-        <button class="modal-close" id="closeShortcutsModal">✕</button>
+        <button class="modal-close" id="closeShortcutsModal" type="button" aria-label="Close" title="Close">
+          <span class="material-symbols-rounded" aria-hidden="true">close</span>
+        </button>
       </div>
       <div class="modal-body">
         <div class="shortcuts-list">
@@ -409,65 +453,12 @@
     <div class="modal-content shortcuts-modal">
       <div class="modal-header">
         <h3 id="statsListModalTitle">Statistics</h3>
-        <button class="modal-close" id="closeStatsListModal">✕</button>
+        <button class="modal-close" id="closeStatsListModal" type="button" aria-label="Close" title="Close">
+          <span class="material-symbols-rounded" aria-hidden="true">close</span>
+        </button>
       </div>
       <div class="modal-body">
         <div class="stats-list" id="statsListModalBody"></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Fullscreen Now Playing -->
-  <div class="np-fullscreen" id="nowPlayingFullscreen" style="display: none;" aria-hidden="true">
-    <div class="npfs-surface" role="dialog" aria-modal="true" aria-label="Now Playing">
-      <div class="npfs-header">
-        <button class="np-icon-btn" id="closeNowPlayingFullscreen" type="button" aria-label="Close fullscreen">✕</button>
-        <div class="npfs-header-title">Now Playing</div>
-        <button class="np-icon-btn" id="npfsOpenQueue" type="button" aria-label="Open queue" title="Queue">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20" aria-hidden="true">
-            <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>
-          </svg>
-        </button>
-      </div>
-
-      <div class="npfs-body">
-        <div class="npfs-art">
-          <img id="npfsArtwork" class="npfs-artwork" alt="Album artwork" />
-        </div>
-
-        <div class="npfs-meta">
-          <div id="npfsTitle" class="npfs-title">No song playing</div>
-          <div id="npfsArtist" class="npfs-artist"></div>
-        </div>
-
-        <div class="npfs-progress">
-          <div class="npfs-time" id="npfsCurrentTime">0:00</div>
-          <input type="range" id="npfsProgressBar" min="0" max="100" value="0" />
-          <div class="npfs-time" id="npfsTotalTime">0:00</div>
-        </div>
-
-        <div class="npfs-controls">
-          <button class="npfs-btn" id="npfsPrev" type="button" aria-label="Previous">
-            <svg viewBox="0 0 24 24" fill="currentColor" width="26" height="26" aria-hidden="true"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>
-          </button>
-          <button class="npfs-btn npfs-btn-play" id="npfsPlayPause" type="button" aria-label="Play/Pause">
-            <svg viewBox="0 0 24 24" fill="currentColor" width="34" height="34" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
-          </button>
-          <button class="npfs-btn" id="npfsNext" type="button" aria-label="Next">
-            <svg viewBox="0 0 24 24" fill="currentColor" width="26" height="26" style="transform: rotate(180deg);" aria-hidden="true"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>
-          </button>
-
-          <button class="npfs-chip" id="npfsShuffle" type="button" aria-label="Toggle shuffle">Shuffle</button>
-          <button class="npfs-chip" id="npfsRepeat" type="button" aria-label="Cycle repeat">Repeat</button>
-        </div>
-
-        <div class="npfs-queue">
-          <div class="npfs-queue-header">
-            <div class="npfs-queue-title">Up Next</div>
-            <button class="npfs-chip" id="npfsClear" type="button">Clear</button>
-          </div>
-          <div class="npfs-queue-list" id="npfsQueueList"></div>
-        </div>
       </div>
     </div>
   </div>

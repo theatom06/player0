@@ -1,4 +1,4 @@
-import { scanLibrary as scanLibraryAPI, clearCache } from '../API.js';
+import { scanLibrary as scanLibraryAPI, clearCache } from '../api.js';
 
 export async function scanLibrary() {
   const button = document.getElementById('scanButton');

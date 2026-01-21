@@ -22,7 +22,8 @@ export function setupPlayerControls() {
   });
 
   volumeSlider?.addEventListener('input', (e) => {
-    setVolume(e.target.value / 100);
+    // `setVolume` expects 0-100.
+    setVolume(Number(e.target.value) || 0);
   });
 
   // Keyboard shortcuts
@@ -61,16 +62,18 @@ export function setupPlayerControls() {
         break;
       case 'ArrowUp': {
         e.preventDefault();
-        const currentVol = audioPlayer.volume;
-        setVolume(Math.min(1, currentVol + 0.1));
-        if (volumeSlider) volumeSlider.value = String(Math.min(100, Number(volumeSlider.value || 0) + 10));
+        const current = volumeSlider ? Number(volumeSlider.value || 0) : (audioPlayer.volume * 100);
+        const next = Math.min(100, current + 10);
+        setVolume(next);
+        if (volumeSlider) volumeSlider.value = String(next);
         break;
       }
       case 'ArrowDown': {
         e.preventDefault();
-        const currentVol = audioPlayer.volume;
-        setVolume(Math.max(0, currentVol - 0.1));
-        if (volumeSlider) volumeSlider.value = String(Math.max(0, Number(volumeSlider.value || 0) - 10));
+        const current = volumeSlider ? Number(volumeSlider.value || 0) : (audioPlayer.volume * 100);
+        const next = Math.max(0, current - 10);
+        setVolume(next);
+        if (volumeSlider) volumeSlider.value = String(next);
         break;
       }
       case 'k':

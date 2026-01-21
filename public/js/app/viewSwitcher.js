@@ -9,6 +9,9 @@ export async function switchView(viewName, updateUrl = true) {
   const container = document.getElementById('viewContainer');
   if (!container) return;
 
+  // Ensure base transition class exists (CSS handles animation).
+  container.classList.add('view-container');
+
   // Mobile: hide the search bar when navigating between views.
   if (window.matchMedia('(max-width: 700px)').matches) {
     document.body.classList.remove('mobile-search-open');
@@ -38,7 +41,10 @@ export async function switchView(viewName, updateUrl = true) {
     const html = await response.text();
     container.innerHTML = html;
 
-    container.style.animation = 'fadeIn 0.3s ease-out';
+    // Re-trigger view enter animation (class-based, respects reduced motion).
+    container.classList.remove('view-container');
+    void container.offsetWidth;
+    container.classList.add('view-container');
 
     if (updateUrl) {
       const route = viewName.replace('View', '');

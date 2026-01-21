@@ -1,10 +1,11 @@
 import { debounce } from '../utils.js';
-import { advancedSearch as AdvancedSearchAPI, fetchAllSongs, simpleSearch, getSearchSuggestions } from '../API.js';
+import { advancedSearch as AdvancedSearchAPI, fetchAllSongs, simpleSearch, getSearchSuggestions } from '../api.js';
 import { setCurrentSongs } from '../state.js';
 import { renderSongs } from '../ui.js';
 import { switchView } from './views.js';
 import { playSongFromList } from './library.js';
-import { addSearchFilter, clearSearchFilters } from './enhancements.js';
+import { addSearchFilter, clearSearchFilters } from './uiFeatures.js';
+import { getSongSortState, sortSongs, setLibraryResultsCount, updateLibrarySortUI } from './songSort.js';
 
 const searchInput = document.getElementById('searchInput');
 const advancedSearchEl = document.getElementById('advancedSearch');
@@ -150,16 +151,22 @@ export async function performSearch() {
 
   if (!query) {
     const songs = await fetchAllSongs();
-    setCurrentSongs(songs);
-    renderSongs(songs, playSongFromList);
+    const sorted = sortSongs(songs, getSongSortState());
+    setCurrentSongs(sorted);
+    renderSongs(sorted, playSongFromList);
+    setLibraryResultsCount({ shown: sorted.length, total: songs.length });
+    updateLibrarySortUI();
     return;
   }
 
   try {
     const songs = await simpleSearch(query);
     if (songs.length > 0) {
-      setCurrentSongs(songs);
-      renderSongs(songs, playSongFromList);
+      const sorted = sortSongs(songs, getSongSortState());
+      setCurrentSongs(sorted);
+      renderSongs(sorted, playSongFromList);
+      setLibraryResultsCount({ shown: sorted.length });
+      updateLibrarySortUI();
       return;
     }
 
@@ -174,8 +181,11 @@ export async function performSearch() {
       .slice(0, 300)
       .map(x => x.song);
 
-    setCurrentSongs(scored);
-    renderSongs(scored, playSongFromList);
+    const sorted = sortSongs(scored, getSongSortState());
+    setCurrentSongs(sorted);
+    renderSongs(sorted, playSongFromList);
+    setLibraryResultsCount({ shown: sorted.length });
+    updateLibrarySortUI();
   } catch (error) {
     console.error('Search error:', error);
   }
@@ -190,8 +200,11 @@ async function applyAdvancedSearch() {
 
   try {
     const songs = await AdvancedSearchAPI({ artist, album, genre, year });
-    setCurrentSongs(songs);
-    renderSongs(songs, playSongFromList);
+    const sorted = sortSongs(songs, getSongSortState());
+    setCurrentSongs(sorted);
+    renderSongs(sorted, playSongFromList);
+    setLibraryResultsCount({ shown: sorted.length });
+    updateLibrarySortUI();
   } catch (error) {
     console.error('Advanced search error:', error);
   }
@@ -211,8 +224,11 @@ async function clearFilters() {
   if (searchInput) searchInput.value = '';
 
   const songs = await fetchAllSongs();
-  setCurrentSongs(songs);
-  renderSongs(songs, playSongFromList);
+  const sorted = sortSongs(songs, getSongSortState());
+  setCurrentSongs(sorted);
+  renderSongs(sorted, playSongFromList);
+  setLibraryResultsCount({ shown: sorted.length, total: songs.length });
+  updateLibrarySortUI();
 }
 
 async function runDiscoveryNotPlayedRecently() {
@@ -226,8 +242,11 @@ async function runDiscoveryNotPlayedRecently() {
     return aTime - bTime;
   });
   const pick = sorted.slice(0, 300);
-  setCurrentSongs(pick);
-  renderSongs(pick, playSongFromList);
+  const picked = sortSongs(pick, getSongSortState());
+  setCurrentSongs(picked);
+  renderSongs(picked, playSongFromList);
+  setLibraryResultsCount({ shown: picked.length, total: songs.length });
+  updateLibrarySortUI();
 }
 
 async function runDiscoveryLowPlayCount() {
@@ -242,8 +261,11 @@ async function runDiscoveryLowPlayCount() {
     return aTime - bTime;
   });
   const pick = sorted.slice(0, 300);
-  setCurrentSongs(pick);
-  renderSongs(pick, playSongFromList);
+  const picked = sortSongs(pick, getSongSortState());
+  setCurrentSongs(picked);
+  renderSongs(picked, playSongFromList);
+  setLibraryResultsCount({ shown: picked.length, total: songs.length });
+  updateLibrarySortUI();
 }
 
 // ============================================

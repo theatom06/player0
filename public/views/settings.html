@@ -4,17 +4,123 @@
 
 <div class="settings-section">
   <div class="settings-section-header">
-    <h3>Exports</h3>
-    <p>Download your library statistics for backup or analysis.</p>
+    <h3>Appearance</h3>
+    <p>Theme and motion preferences.</p>
   </div>
 
-  <div class="settings-action-card">
-    <div class="settings-action-text">
-      <div class="settings-action-title">Library stats</div>
-      <div class="settings-action-desc">Exports listening stats as a CSV file.</div>
+  <div class="settings-action-grid">
+    <div class="settings-action-card">
+      <div class="settings-action-text">
+        <div class="settings-action-title">Dynamic colors</div>
+        <div class="settings-action-desc">Uses album art to tint the UI.</div>
+      </div>
+      <div class="settings-action-controls">
+        <label class="settings-toggle" for="settingsDynamicColorsEnabled">
+          <input id="settingsDynamicColorsEnabled" type="checkbox" />
+          <span class="settings-toggle-ui" aria-hidden="true"></span>
+          <span class="settings-toggle-label">Enabled</span>
+        </label>
+      </div>
     </div>
-    <div class="settings-action-controls">
-      <button class="btn-primary" id="exportStatsCsvButton" type="button">Export CSV</button>
+
+    <div class="settings-action-card">
+      <div class="settings-action-text">
+        <div class="settings-action-title">Animations</div>
+        <div class="settings-action-desc">Turn off UI animations/transitions.</div>
+      </div>
+      <div class="settings-action-controls">
+        <label class="settings-toggle" for="settingsNoAnimations">
+          <input id="settingsNoAnimations" type="checkbox" />
+          <span class="settings-toggle-ui" aria-hidden="true"></span>
+          <span class="settings-toggle-label">Disabled</span>
+        </label>
+      </div>
+    </div>
+
+    <div class="settings-action-card settings-action-card--wide settings-action-card--stack">
+      <div class="settings-action-text">
+        <div class="settings-action-title">Theme colors</div>
+        <div class="settings-action-desc">Customize colors across the app (like Tumblr themes).</div>
+      </div>
+      <div class="settings-action-controls">
+        <div class="settings-color-grid">
+          <label class="settings-color-item" for="settingsColorAccent">
+            <span class="settings-color-label">Accent</span>
+            <input id="settingsColorAccent" class="settings-color" type="color" value="#f8fafc" />
+          </label>
+
+          <label class="settings-color-item" for="settingsColorBgDark">
+            <span class="settings-color-label">Background</span>
+            <input id="settingsColorBgDark" class="settings-color" type="color" value="#050505" />
+          </label>
+
+          <label class="settings-color-item" for="settingsColorBgMedium">
+            <span class="settings-color-label">Surface</span>
+            <input id="settingsColorBgMedium" class="settings-color" type="color" value="#0b0b0b" />
+          </label>
+
+          <label class="settings-color-item" for="settingsColorBgLight">
+            <span class="settings-color-label">Surface 2</span>
+            <input id="settingsColorBgLight" class="settings-color" type="color" value="#121212" />
+          </label>
+
+          <label class="settings-color-item" for="settingsColorTextPrimary">
+            <span class="settings-color-label">Text</span>
+            <input id="settingsColorTextPrimary" class="settings-color" type="color" value="#f8fafc" />
+          </label>
+
+          <label class="settings-color-item" for="settingsColorTextSecondary">
+            <span class="settings-color-label">Muted text</span>
+            <input id="settingsColorTextSecondary" class="settings-color" type="color" value="#a1a1aa" />
+          </label>
+
+          <label class="settings-color-item" for="settingsColorBorder">
+            <span class="settings-color-label">Border</span>
+            <input id="settingsColorBorder" class="settings-color" type="color" value="#2a2a2a" />
+          </label>
+        </div>
+
+        <div class="settings-color-actions">
+          <button class="btn-secondary" id="settingsResetTheme" type="button">Reset theme</button>
+        </div>
+
+        <div class="settings-action-desc" style="margin-top:6px;">Note: Dynamic colors can override parts of the theme; disable it for full control.</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="settings-section">
+  <div class="settings-section-header">
+    <h3>Library</h3>
+    <p>Where Player 0 scans for music and stores its database.</p>
+  </div>
+
+  <div class="settings-action-grid">
+    <div class="settings-action-card settings-action-card--wide">
+      <div class="settings-action-text">
+        <div class="settings-action-title">Music folders</div>
+        <div class="settings-action-desc">One folder per line. These are scanned for songs.</div>
+      </div>
+      <div class="settings-action-controls settings-action-controls--stack">
+        <textarea id="settingsMusicDirectories" class="settings-textarea" rows="3" placeholder="/music\n/storage/music"></textarea>
+        <div class="settings-export-row">
+          <button class="btn-secondary" id="settingsServerConfigLoad" type="button">Load config</button>
+          <button class="btn-primary" id="settingsServerConfigSave" type="button">Save config</button>
+        </div>
+        <div class="settings-action-desc" id="settingsServerConfigStatus" aria-live="polite"></div>
+      </div>
+    </div>
+
+    <div class="settings-action-card settings-action-card--wide">
+      <div class="settings-action-text">
+        <div class="settings-action-title">Data folder</div>
+        <div class="settings-action-desc">Where Player 0 stores JSON metadata (play history, playlists, stats).</div>
+      </div>
+      <div class="settings-action-controls">
+        <input id="settingsDataDirectory" class="settings-input" type="text" placeholder="./data" />
+      </div>
     </div>
   </div>
 </div>
@@ -98,6 +204,41 @@
           </div>
         </div>
       </div>
+    </div>
+  </div>
+</div>
+
+<div class="settings-section">
+  <div class="settings-section-header">
+    <h3>Exports</h3>
+    <p>Download your library statistics for backup or analysis.</p>
+  </div>
+
+  <div class="settings-action-card">
+    <div class="settings-action-text">
+      <div class="settings-action-title">Library stats</div>
+      <div class="settings-action-desc">Exports listening stats as a CSV file.</div>
+    </div>
+    <div class="settings-action-controls">
+      <button class="btn-primary" id="exportStatsCsvButton" type="button">Export CSV</button>
+    </div>
+  </div>
+
+  <div class="settings-action-card">
+    <div class="settings-action-text">
+      <div class="settings-action-title">Import stats (CSV)</div>
+      <div class="settings-action-desc">Restores song play counts and last played timestamps from a previously exported CSV.</div>
+    </div>
+    <div class="settings-action-controls">
+      <div class="dropdown">
+        <button class="dropdown-trigger" type="button" data-dropdown-trigger aria-haspopup="menu" aria-expanded="false" aria-label="Import stats actions">
+          ⋯
+        </button>
+        <div class="dropdown-menu" role="menu">
+          <button class="dropdown-item" id="importStatsCsvButton" type="button" role="menuitem">Import CSV</button>
+        </div>
+      </div>
+      <input id="importStatsCsvFile" type="file" accept="text/csv,.csv" style="display:none" />
     </div>
   </div>
 </div>

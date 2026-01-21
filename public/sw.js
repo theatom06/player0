@@ -42,6 +42,10 @@ const STATIC_ASSETS = [
   '/index.html',
   '/main.css',
   '/app.js',
+  '/fonts/InterVariable.woff2',
+  '/fonts/InterVariable-Italic.woff2',
+  '/fonts/MaterialSymbolsRounded.woff2',
+  '/fonts/MaterialSymbolsRounded.ttf',
   '/css/base.css',
   '/css/components.css',
   '/css/header.css',
@@ -50,14 +54,16 @@ const STATIC_ASSETS = [
   '/css/player.css',
   '/css/sidebar.css',
   '/css/views.css',
-  '/js/API.js',
+  '/js/api.js',
   '/js/player.js',
   '/js/state.js',
   '/js/ui.js',
   '/js/utils.js',
+  '/js/components/song-row.js',
   '/js/app/albums.js',
   '/js/app/artists.js',
   '/js/app/dropdowns.js',
+  '/js/app/uiFeatures.js',
   '/js/app/library.js',
   '/js/app/navigation.js',
   '/js/app/playerSetup.js',
@@ -209,6 +215,10 @@ function isStaticAsset(pathname) {
          pathname.endsWith('.html') ||
          pathname.endsWith('.css') ||
          pathname.endsWith('.js') ||
+         pathname.endsWith('.woff2') ||
+         pathname.endsWith('.woff') ||
+         pathname.endsWith('.ttf') ||
+         pathname.endsWith('.otf') ||
          pathname.endsWith('.svg') ||
          pathname.endsWith('.png') ||
          pathname.endsWith('.jpg') ||

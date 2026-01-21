@@ -23,6 +23,96 @@ import path from 'path';
 import { parseFile } from 'music-metadata';
 import Storage from './storage.js';
 import configData from './config.json' with { type: 'json' };
+import { AubioAnalyzer } from './analyzer/aubioAnalyzer.js';
+
+function normalizeWhitespace(text) {
+  return String(text || '')
+    .replace(/[\u0000-\u001f]+/g, ' ')
+    .replace(/[_]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function isUnknownText(text) {
+  const t = normalizeWhitespace(text).toLowerCase();
+  return !t || t === 'unknown' || t === 'unknown artist' || t === 'unknown album';
+}
+
+function cleanFilenameStem(stem) {
+  let s = normalizeWhitespace(stem);
+
+  // Strip common prefixes like track numbers: "01 ", "01-", "01." etc.
+  s = s.replace(/^\(?\s*\d{1,3}\s*\)?\s*[-._]+\s*/i, '');
+  s = s.replace(/^\d{1,3}\s+/i, '');
+
+  // Strip common bracketed noise (kept conservative).
+  s = s.replace(/\s*[\[(]{1}[^\])]{1,40}[\])]{1}\s*/g, ' ');
+
+  // Normalize separators.
+  s = s.replace(/[•·]/g, '-');
+  s = normalizeWhitespace(s);
+
+  return s;
+}
+
+function splitArtistTitle(stem) {
+  const s = cleanFilenameStem(stem);
+  const parts = s.split(/\s+-\s+|\s+–\s+|\s+—\s+/).map(x => normalizeWhitespace(x)).filter(Boolean);
+  if (parts.length < 2) return null;
+  const artist = parts[0];
+  const title = parts.slice(1).join(' - ');
+  if (!artist || !title) return null;
+  return { artist, title };
+}
+
+function parseLeadingTrackNumber(stem) {
+  const m = String(stem || '').match(/^\s*(\d{1,3})\b/);
+  if (!m) return null;
+  const n = Number(m[1]);
+  if (!Number.isFinite(n) || n <= 0 || n > 200) return null;
+  return Math.trunc(n);
+}
+
+function inferFromFolders(filePath, rootDir) {
+  try {
+    const rel = rootDir ? path.relative(rootDir, filePath) : null;
+    const parts = (rel ? rel.split(path.sep) : filePath.split(path.sep)).filter(Boolean);
+    // Expect .../<artist>/<album>/<file>
+    const fileName = parts[parts.length - 1] || '';
+    const album = parts.length >= 2 ? parts[parts.length - 2] : null;
+    const artist = parts.length >= 3 ? parts[parts.length - 3] : null;
+    return {
+      artist: artist ? normalizeWhitespace(artist) : null,
+      album: album ? normalizeWhitespace(album) : null,
+      fileName
+    };
+  } catch {
+    return { artist: null, album: null, fileName: '' };
+  }
+}
+
+function inferYearFromFolderName(name) {
+  const m = String(name || '').match(/\b(19\d{2}|20\d{2})\b/);
+  if (!m) return null;
+  const y = Number(m[1]);
+  if (!Number.isFinite(y) || y < 1900 || y > 2100) return null;
+  return Math.trunc(y);
+}
+
+function normalizeBpm(value) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return null;
+  // Keep conservative bounds to avoid garbage values.
+  if (n < 30 || n > 300) return null;
+  return Math.round(n);
+}
+
+function normalizeKey(value) {
+  const s = normalizeWhitespace(value);
+  if (!s) return null;
+  if (s.length > 32) return s.slice(0, 32);
+  return s;
+}
 
 class MusicScanner {
   /**
@@ -32,6 +122,13 @@ class MusicScanner {
     this.storage = new Storage(configData.dataDirectory);
     this.supportedFormats = configData.supportedFormats;
     this.musicDirectories = configData.musicDirectories;
+
+    // Background analyzer: never blocks scan() completion.
+    this.analyzer = new AubioAnalyzer({
+      cacheFilePath: path.join(this.storage.dataDir, 'analysis_cache.json'),
+      concurrency: 1,
+      logger: console
+    });
   }
 
   /**
@@ -115,12 +212,21 @@ class MusicScanner {
           
           // Skip if file hasn't been modified since last scan
           if (existingSong && existingSong.lastModified === lastModified) {
+            // Even if unchanged, opportunistically analyze missing BPM/key in background.
+            if (ext === '.mp3' && (existingSong.bpm == null || existingSong.key == null)) {
+              void this.analyzer.enqueue({
+                filePath,
+                statHint: { size: stats.size, mtimeMs: stats.mtimeMs },
+                songId: existingSong.id,
+                storage: this.storage
+              });
+            }
             songs.push(existingSong);
             continue;
           }
           
           // Extract metadata from audio file
-          const metadata = await this.extractMetadata(filePath, stats);
+          const metadata = await this.extractMetadata(filePath, stats, directory);
           
           if (existingSong) {
             // Update existing song, preserve user data (play stats)
@@ -133,6 +239,15 @@ class MusicScanner {
             };
             songs.push(updatedSong);
             updated++;
+
+            if (ext === '.mp3' && (updatedSong.bpm == null || updatedSong.key == null)) {
+              void this.analyzer.enqueue({
+                filePath,
+                statHint: { size: stats.size, mtimeMs: stats.mtimeMs },
+                songId: updatedSong.id,
+                storage: this.storage
+              });
+            }
           } else {
             // New song - create with default values
             const newSong = {
@@ -146,6 +261,15 @@ class MusicScanner {
             };
             songs.push(newSong);
             added++;
+
+            if (ext === '.mp3' && (newSong.bpm == null || newSong.key == null)) {
+              void this.analyzer.enqueue({
+                filePath,
+                statHint: { size: stats.size, mtimeMs: stats.mtimeMs },
+                songId: newSong.id,
+                storage: this.storage
+              });
+            }
           }
           
           // Progress logging every 100 files
@@ -169,20 +293,57 @@ class MusicScanner {
    * @param {Object} stats - File system stats object
    * @returns {Object} Extracted metadata
    */
-  async extractMetadata(filePath, stats) {
+  async extractMetadata(filePath, stats, rootDir) {
     try {
       const metadata = await parseFile(filePath);
       const { common, format } = metadata;
-      
+
+      const ext = path.extname(filePath);
+      const stemRaw = path.basename(filePath, ext);
+      const stem = cleanFilenameStem(stemRaw);
+      const folderGuess = inferFromFolders(filePath, rootDir);
+
+      const parsedArtistTitle = splitArtistTitle(stemRaw);
+
+      const titleFromTags = common.title;
+      const artistFromTags = common.artist;
+      const albumFromTags = common.album;
+
+      const title = !isUnknownText(titleFromTags)
+        ? normalizeWhitespace(titleFromTags)
+        : (parsedArtistTitle?.title || stem || path.basename(filePath, ext));
+
+      const artist = !isUnknownText(artistFromTags)
+        ? normalizeWhitespace(artistFromTags)
+        : (parsedArtistTitle?.artist || folderGuess.artist || 'Unknown Artist');
+
+      const album = !isUnknownText(albumFromTags)
+        ? normalizeWhitespace(albumFromTags)
+        : (folderGuess.album || 'Unknown Album');
+
+      const albumArtist = !isUnknownText(common.albumartist)
+        ? normalizeWhitespace(common.albumartist)
+        : (!isUnknownText(artistFromTags) ? normalizeWhitespace(artistFromTags) : (folderGuess.artist || null));
+
+      const trackNumber = common.track?.no || parseLeadingTrackNumber(stemRaw) || null;
+      const discNumber = common.disk?.no || null;
+
+      const year = common.year || inferYearFromFolderName(folderGuess.album) || inferYearFromFolderName(folderGuess.artist) || null;
+
+      const bpm = normalizeBpm(common.bpm);
+      const key = normalizeKey(common.key);
+
       return {
-        title: common.title || path.basename(filePath, path.extname(filePath)),
-        artist: common.artist || 'Unknown Artist',
-        album: common.album || 'Unknown Album',
-        albumArtist: common.albumartist || common.artist || null,
+        title,
+        artist,
+        album,
+        albumArtist,
         genre: common.genre?.[0] || null,
-        year: common.year || null,
-        trackNumber: common.track?.no || null,
-        discNumber: common.disk?.no || null,
+        year,
+        trackNumber,
+        discNumber,
+        bpm,
+        key,
         duration: format.duration || null,
         bitrate: format.bitrate || null,
         fileSize: stats.size,
@@ -191,14 +352,26 @@ class MusicScanner {
     } catch (error) {
       console.error(`Error extracting metadata from ${filePath}:`, error.message);
       // Return basic metadata from filename if extraction fails
+
+      const ext = path.extname(filePath);
+      const stemRaw = path.basename(filePath, ext);
+      const stem = cleanFilenameStem(stemRaw);
+      const folderGuess = inferFromFolders(filePath, rootDir);
+      const parsedArtistTitle = splitArtistTitle(stemRaw);
+
+      const title = parsedArtistTitle?.title || stem || path.basename(filePath, ext);
+      const artist = parsedArtistTitle?.artist || folderGuess.artist || 'Unknown Artist';
+      const album = folderGuess.album || 'Unknown Album';
+      const year = inferYearFromFolderName(folderGuess.album) || inferYearFromFolderName(folderGuess.artist) || null;
+
       return {
-        title: path.basename(filePath, path.extname(filePath)),
-        artist: 'Unknown Artist',
-        album: 'Unknown Album',
-        albumArtist: null,
+        title,
+        artist,
+        album,
+        albumArtist: folderGuess.artist || null,
         genre: null,
-        year: null,
-        trackNumber: null,
+        year,
+        trackNumber: parseLeadingTrackNumber(stemRaw) || null,
         discNumber: null,
         duration: null,
         bitrate: null,
@@ -235,7 +408,15 @@ class MusicScanner {
  */
 if (import.meta.url === `file://${process.argv[1]}`) {
   const scanner = new MusicScanner();
-  scanner.scan().then(() => {
+  scanner.scan().then(async () => {
+    // When invoked as a CLI, wait for background analysis/tagging to finish.
+    // (The API route still returns immediately after scan completes.)
+    try {
+      await scanner.analyzer.idle();
+      await scanner.analyzer.cache.flush();
+    } catch {
+      // ignore
+    }
     console.log('Scan completed successfully');
     process.exit(0);
   }).catch(error => {

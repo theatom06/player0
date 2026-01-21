@@ -1,4 +1,4 @@
-import { clearCache, createPlaylist, fetchAllSongs, listPlaylists } from '../API.js';
+import { clearCache, createPlaylist, fetchAllSongs, listPlaylists } from '../api.js';
 
 function downloadBlob(filename, blob) {
   const url = URL.createObjectURL(blob);

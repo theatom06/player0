@@ -354,6 +354,105 @@ async function scanLibrary() {
 }
 
 // ============================================
+// Lyrics API
+// ============================================
+
+async function getLyrics(songId, { force = false } = {}) {
+    if (!songId) throw new Error('songId is required');
+
+    const url = new URL(`${API_URL}/lyrics/${encodeURIComponent(songId)}`);
+    if (force) url.searchParams.set('force', '1');
+
+    const response = await fetch(url.toString(), { cache: 'no-store' });
+    const data = await response.json();
+
+    if (!response.ok) {
+        throw new Error(data.error || data.message || 'Error getting lyrics');
+    }
+
+    return data;
+}
+
+// ============================================
+// Song Metadata (Tagging) APIs
+// ============================================
+
+async function updateSong(id, updates) {
+    const response = await fetch(`${API_URL}/songs/${encodeURIComponent(id)}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updates || {})
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+        throw new Error(data.error || data.message || 'Failed to update song');
+    }
+
+    // Clear cache for list + item.
+    cache.delete(getCacheKey(`${API_URL}/songs`));
+    cache.delete(getCacheKey(`${API_URL}/songs/${id}`));
+
+    return data;
+}
+
+// ============================================
+// Stats Import
+// ============================================
+
+async function importStatsCsv(csvText) {
+    const response = await fetch(`${API_URL}/stats/import`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ csv: String(csvText || '') })
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+        throw new Error(data.error || data.message || 'Failed to import stats');
+    }
+
+    // Invalidate cached views.
+    cache.delete(getCacheKey(`${API_URL}/songs`));
+    cache.delete(getCacheKey(`${API_URL}/stats`));
+    return data;
+}
+
+// ============================================
+// Admin / Config
+// ============================================
+
+async function getServerConfig() {
+    const response = await fetch(`${API_URL}/config`, {
+        method: 'GET',
+        headers: {}
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+        throw new Error(data.error || data.message || 'Failed to load server config');
+    }
+    return data;
+}
+
+async function updateServerConfig(configUpdate) {
+    const response = await fetch(`${API_URL}/config`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(configUpdate || {})
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+        throw new Error(data.error || data.message || 'Failed to update server config');
+    }
+    return data;
+}
+
+// ============================================
 // Exports
 // ============================================
 
@@ -365,6 +464,10 @@ export {
     songCoverUrl,
     songStreamUrl,
     recordPlay,
+    updateSong,
+    importStatsCsv,
+    getServerConfig,
+    updateServerConfig,
     listAlbums,
     getAlbumDetail,
     albumCoverUrl,
@@ -378,5 +481,6 @@ export {
     removeSongFromPlaylist,
     getStats,
     scanLibrary,
+    getLyrics,
     clearCache
 };

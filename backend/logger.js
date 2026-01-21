@@ -159,9 +159,7 @@ export function httpLogger(req, res, next) {
  * @param {string} options.message - Error message (default: 'Too many requests')
  */
 export function rateLimiter(options = {}) {
-  const windowMs = options.windowMs || 60 * 1000;
-  const max = options.max || 100;
-  const message = options.message || 'Too many requests, please try again later';
+  const getOptions = (typeof options === 'function') ? options : () => options;
   
   const requests = new Map();
   
@@ -169,23 +167,32 @@ export function rateLimiter(options = {}) {
   setInterval(() => {
     const now = Date.now();
     for (const [key, data] of requests.entries()) {
-      if (now - data.windowStart > windowMs) {
+      if (now - data.windowStart > (data.windowMs || 60 * 1000)) {
         requests.delete(key);
       }
     }
   }, 60 * 1000);
   
   return (req, res, next) => {
+    const opts = getOptions() || {};
+    const enabled = (typeof opts.enabled === 'boolean') ? opts.enabled : true;
+    const windowMs = Number(opts.windowMs) || 60 * 1000;
+    const max = Number(opts.max) || 100;
+    const message = opts.message || 'Too many requests, please try again later';
+
+    if (!enabled) return next();
+
     const key = req.ip || req.connection?.remoteAddress || 'unknown';
     const now = Date.now();
     
     let data = requests.get(key);
     
     if (!data || now - data.windowStart > windowMs) {
-      data = { count: 1, windowStart: now };
+      data = { count: 1, windowStart: now, windowMs };
       requests.set(key, data);
     } else {
       data.count++;
+      data.windowMs = windowMs;
     }
     
     // Set rate limit headers
