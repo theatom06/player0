@@ -1,0 +1,38 @@
+# Player0 To-Do List
+
+## Bugs and Tweaks
+
+1. Prevent lyrics from automatically scrolling into view.
+2. Add cover art display in the statistics view.
+3. Correct the album count display size in the statistics view.
+4. Fix the "Now Playing" header layout.
+5. Resolve confusion in the animation switch logic.
+6. Adjust theme color placement.
+7. Fix the "Import Stats" button functionality.
+8. Refine settings components.
+9. Correct the dropdown menu colors.
+10. Fix mood playlists cropping into view.
+11. Improve the "listening activity" display.
+12. Fix the "more" icon.
+13. Ensure modal components are not too large.
+
+## New Features
+
+1. Add cover art for playlists.
+2. Create a dedicated "Artists" page.
+3. Design a homepage/dashboard.
+4. Create reusable song card components (for both card and list layouts).
+5. Implement resizable panes for the layout.
+6. Improve the shuffle algorithm for better randomness.
+7. Add a dedicated lyrics view and a "zen" mode for focused listening.
+
+## Architectural and Long-Term Ideas
+
+1. Remove the old server implementation.
+2. Improve PWA readiness by allowing local folder import, reducing the need for online support.
+3. Explore a remote static "server" concept, where the server is just a directory online for scanning.
+4. Use IndexedDB for local storage instead of the current in-memory cache.
+5. Investigate the possibility of a serverless architecture.
+6. Enhance the mobile UI/UX.
+7. Use a dedicated API for fetching metadata.
+8. Implement user accounts.

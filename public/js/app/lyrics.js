@@ -250,7 +250,7 @@ function updateHighlight(currentTimeSeconds) {
       if (el && typeof el.scrollIntoView === 'function') {
         const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
         const noAnimations = document.body?.classList?.contains('no-animations');
-        el.scrollIntoView({ block: 'center', behavior: (reduceMotion || noAnimations) ? 'auto' : 'smooth' });
+        // el.scrollIntoView({ block: 'center', behavior: (reduceMotion || noAnimations) ? 'auto' : 'smooth' });
       }
     }
   });

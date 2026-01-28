@@ -289,6 +289,7 @@ export function renderStats(stats) {
       <div class="stat-preview">
         ${mostPlayedPreview.length ? mostPlayedPreview.map(song => `
           <div class="stat-preview-item">
+            ${lazyImageHtml(songCoverUrl(song.id), song.title, 'stat-preview-cover')}
             <div style="min-width: 0;">
               <div class="stat-preview-primary">${escapeHtml(song.title || 'Unknown')}</div>
               <div class="stat-preview-secondary">${escapeHtml(song.artist || 'Unknown Artist')}</div>
@@ -364,6 +365,7 @@ export function renderStats(stats) {
           const timeAgo = play.playedAt ? getTimeAgo(new Date(play.playedAt)) : '';
           return `
             <div class="stat-preview-item">
+              ${lazyImageHtml(songCoverUrl(play.id), play.title, 'stat-preview-cover')}
               <div style="min-width: 0;">
                 <div class="stat-preview-primary">${escapeHtml(play.title || 'Unknown')}</div>
                 <div class="stat-preview-secondary">${escapeHtml(play.artist || 'Unknown Artist')}</div>
